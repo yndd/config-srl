@@ -1,0 +1,8 @@
+apiVersion: pkg.ndd.yndd.io/v1
+kind: Provider
+metadata:
+  name: ndd-config-srl
+  namespace: ndd-system
+spec:
+  package: yndd/ndd-config-srl:latest
+  packagePullPolicy: Always
