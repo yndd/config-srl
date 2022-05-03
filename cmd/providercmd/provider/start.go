@@ -18,7 +18,6 @@ package provider
 
 import (
 	"os"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -29,7 +28,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/pkg/profile"
 	"github.com/spf13/cobra"
-	"github.com/yndd/ndd-runtime/pkg/model"
 
 	pkgmetav1 "github.com/yndd/ndd-core/apis/pkg/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -40,15 +38,9 @@ import (
 
 	srlv1alpha1 "github.com/yndd/ndd-config-srl/apis/srl/v1alpha1"
 	"github.com/yndd/ndd-config-srl/internal/controllers"
-	"github.com/yndd/ndd-config-srl/internal/target/srl"
-	"github.com/yndd/ndd-config-srl/pkg/ygotsrl"
 	"github.com/yndd/ndd-runtime/pkg/logging"
 	"github.com/yndd/ndd-runtime/pkg/ratelimiter"
-	"github.com/yndd/ndd-target-runtime/pkg/resource"
 	"github.com/yndd/ndd-target-runtime/pkg/shared"
-	"github.com/yndd/ndd-target-runtime/pkg/target"
-	"github.com/yndd/ndd-target-runtime/pkg/targetcontroller"
-	"github.com/yndd/ndd-target-runtime/pkg/ygotnddtarget"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -68,8 +60,8 @@ var (
 // startCmd represents the start command for the network device driver
 var startCmd = &cobra.Command{
 	Use:          "start",
-	Short:        "start the srl ndd config manager",
-	Long:         "start the srl ndd config manager",
+	Short:        "start the srl config provider",
+	Long:         "start the srl config provider",
 	Aliases:      []string{"start"},
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -107,8 +99,7 @@ var startCmd = &cobra.Command{
 		if grpcQueryAddress != "" {
 			gnmiAddress = grpcQueryAddress
 		} else {
-			gnmiAddress = strings.Join([]string{"127.0.0.1", strconv.Itoa(pkgmetav1.GnmiServerPort)}, ":")
-			//gnmiAddress = getGnmiServerAddress(podname)
+			gnmiAddress = getGnmiServerAddress(podname)
 		}
 		zlog.Info("gnmi address", "address", gnmiAddress)
 
@@ -120,39 +111,13 @@ var startCmd = &cobra.Command{
 		}
 
 		// initialize controllers
-		eventChs, err := controllers.Setup(mgr, nddCtlrOptions(concurrency), nddcopts)
+		_, err = controllers.Setup(mgr, nddCtlrOptions(concurrency), nddcopts)
 		if err != nil {
 			return errors.Wrap(err, "Cannot add ndd controllers to manager")
 		}
 
 		if err = (&srlv1alpha1.SrlConfig{}).SetupWebhookWithManager(mgr); err != nil {
 			return errors.Wrap(err, "unable to create webhook for srl3device")
-		}
-
-		// initialize the target registry and register the vendor type
-		tr := target.NewTargetRegistry()
-		tr.RegisterInitializer(ygotnddtarget.NddTarget_VendorType_nokia_srl, func() target.Target {
-			return srl.New()
-		})
-		// intialize the devicedriver
-		d := targetcontroller.New(
-			cmd.Context(),
-			targetcontroller.WithClient(resource.ClientApplicator{
-				Client:     mgr.GetClient(),
-				Applicator: resource.NewAPIPatchingApplicator(mgr.GetClient()),
-			}),
-			targetcontroller.WithLogger(logging.NewLogrLogger(zlog.WithName("target driver"))),
-			targetcontroller.WithEventCh(eventChs),
-			targetcontroller.WithTargetsRegistry(tr),
-			targetcontroller.WithTargetModel(&model.Model{
-				StructRootType:  reflect.TypeOf((*ygotsrl.Device)(nil)),
-				SchemaTreeRoot:  ygotsrl.SchemaTree["Device"],
-				JsonUnmarshaler: ygotsrl.Unmarshal,
-				EnumData:        ygotsrl.ΛEnum,
-			}),
-		)
-		if err := d.Start(); err != nil {
-			return errors.Wrap(err, "Cannot start device driver")
 		}
 
 		// +kubebuilder:scaffold:builder
@@ -195,7 +160,6 @@ func nddCtlrOptions(c int) controller.Options {
 	}
 }
 
-/*
 func getGnmiServerAddress(podname string) string {
 	//revision := strings.Split(podname, "-")[len(strings.Split(podname, "-"))-3]
 	var newName string
@@ -208,4 +172,3 @@ func getGnmiServerAddress(podname string) string {
 	}
 	return pkgmetav1.PrefixGnmiService + "-" + newName + "." + pkgmetav1.NamespaceLocalK8sDNS + strconv.Itoa((pkgmetav1.GnmiServerPort))
 }
-*/

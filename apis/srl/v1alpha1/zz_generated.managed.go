@@ -37,8 +37,8 @@ func (mg *SrlConfig) GetDeletionPolicy() nddv1.DeletionPolicy {
 	return mg.Spec.DeletionPolicy
 }
 
-// GetNetworkNodeReference of this Srl3Device.
-func (mg *SrlConfig) GetNetworkNodeReference() *nddv1.Reference {
+// GetTargetReference of this Srl3Device.
+func (mg *SrlConfig) GetTargetReference() *nddv1.Reference {
 	return mg.Spec.TargetReference
 }
 
@@ -67,8 +67,8 @@ func (mg *SrlConfig) SetDeletionPolicy(r nddv1.DeletionPolicy) {
 	mg.Spec.DeletionPolicy = r
 }
 
-// SetNetworkNodeReference of this Srl3Device.
-func (mg *SrlConfig) SetNetworkNodeReference(r *nddv1.Reference) {
+// SetTargetReference of this Srl3Device.
+func (mg *SrlConfig) SetTargetReference(r *nddv1.Reference) {
 	mg.Spec.TargetReference = r
 }
 

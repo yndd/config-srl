@@ -38,7 +38,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Srl3Device is the Schema for the Device API
+        description: SrlConfig is the Schema for the Device API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation

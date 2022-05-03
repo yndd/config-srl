@@ -16,8 +16,8 @@ limitations under the License.
 
 package main
 
-import "github.com/yndd/ndd-config-srl/cmd/provider"
+import "github.com/yndd/ndd-config-srl/cmd/configproxycmd/configproxy"
 
 func main() {
-	provider.Execute()
+	configproxy.Execute()
 }

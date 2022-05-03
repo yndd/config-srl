@@ -12,6 +12,8 @@ IMAGE_TAG_BASE ?= yndd/ndd-config-srl
 
 # Image URL to use all building/pushing image targets
 IMG ?= $(IMAGE_TAG_BASE)-controller:$(VERSION)
+IMG_PROVIDER ?= $(IMAGE_TAG_BASE)-provider:$(VERSION)
+IMG_CONFIGPROXY ?= $(IMAGE_TAG_BASE)-config-proxy:$(VERSION)
 # Package
 PKG ?= $(IMAGE_TAG_BASE)
 
@@ -71,16 +73,38 @@ test: generate fmt vet ## Run tests.
 ##@ Build
 
 build: generate fmt vet ## Build manager binary.
-    @CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o ./bin/manager cmd/main.go
+    @CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o ./bin/manager cmd/combinedcmd/main.go
 
 run: generate fmt vet ## Run a controller from your host.
 	go run ./cmd/main.go
 
 docker-build: test ## Build docker image with the manager.
-	docker build -f Dockerfile -t ${IMG} .
+	docker build -f DockerfileController -t ${IMG} .
+	docker build -f DockerfileProvider -t ${IMG_PROVIDER} .
+	docker build -f DockerfileConfigProxy -t ${IMG_CONFIGPROXY} .
+
+docker-build-controller: test ## Build docker images.
+	docker build -f DockerfileController -t ${IMG} .
+
+docker-build-provider: test ## Build docker images.
+	docker build -f DockerfileProvider -t ${IMG_PROVIDER} .
+
+docker-build-configproxy: test ## Build docker images.
+	docker build -f DockerfileConfigProxy -t ${IMG_CONFIGPROXY} .
 
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
+	docker push ${IMG_PROVIDER}
+	docker push ${IMG_CONFIGPROXY}
+
+docker-push-controller: ## Push docker images.
+	docker push ${IMG}
+
+docker-push-provider: ## Push docker images.
+	docker push ${IMG_PROVIDER}
+
+docker-push-configproxy: ## Push docker images.
+	docker push ${IMG_CONFIGPROXY}
 
 package-build: ## build ndd package.
 	rm -rf package/ndd-*

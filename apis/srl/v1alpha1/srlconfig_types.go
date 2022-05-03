@@ -40,7 +40,7 @@ type ConfigStatus struct {
 
 // +kubebuilder:object:root=true
 
-// Srl3Device is the Schema for the Device API
+// SrlConfig is the Schema for the Device API
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="TARGET",type="string",JSONPath=".status.conditions[?(@.kind=='TargetFound')].status"
 // +kubebuilder:printcolumn:name="STATUS",type="string",JSONPath=".status.conditions[?(@.kind=='Ready')].status"

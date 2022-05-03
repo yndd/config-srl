@@ -3,6 +3,8 @@ module github.com/yndd/ndd-config-srl
 go 1.17
 
 require (
+	github.com/go-logr/logr v1.2.0
+	github.com/jetstack/cert-manager v1.7.1
 	github.com/karimra/gnmic v0.24.1
 	github.com/openconfig/gnmi v0.0.0-20220131173555-39aa74195f0d
 	github.com/openconfig/goyang v1.0.0
@@ -10,11 +12,16 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/profile v1.6.0
 	github.com/spf13/cobra v1.4.0
-	github.com/yndd/ndd-core v0.1.11
-	github.com/yndd/ndd-runtime v0.5.6
-	github.com/yndd/ndd-target-runtime v0.0.21
-	github.com/yndd/ndd-yang v0.2.7
+	github.com/yndd/ndd-core v0.2.5
+	github.com/yndd/ndd-runtime v0.5.8
+	github.com/yndd/ndd-target-runtime v0.0.32
+	github.com/yndd/ndd-yang v0.2.8
 	github.com/yndd/nddo-runtime v0.0.76
+	github.com/yndd/nddp-srl3 v0.1.7
+	github.com/yndd/nddp-system v0.2.4
+	google.golang.org/grpc v1.44.0
+	k8s.io/api v0.23.6
+	k8s.io/apiextensions-apiserver v0.23.5
 	k8s.io/apimachinery v0.23.6
 	k8s.io/client-go v0.23.6
 	sigs.k8s.io/controller-runtime v0.11.2
@@ -55,7 +62,6 @@ require (
 	github.com/go-git/gcfg v1.5.0 // indirect
 	github.com/go-git/go-billy/v5 v5.3.1 // indirect
 	github.com/go-git/go-git/v5 v5.4.2 // indirect
-	github.com/go-logr/logr v1.2.0 // indirect
 	github.com/go-logr/zapr v1.2.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/glog v1.0.0 // indirect
@@ -77,7 +83,6 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.1.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
-	github.com/hashicorp/go-msgpack v1.1.5 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.0 // indirect
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect
@@ -120,7 +125,6 @@ require (
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	github.com/ugorji/go/codec v1.2.6 // indirect
 	github.com/xanzy/ssh-agent v0.3.1 // indirect
-	github.com/yndd/nddp-system v0.2.4 // indirect
 	github.com/zealic/xignore v0.3.3 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.opencensus.io v0.23.0 // indirect
@@ -143,7 +147,6 @@ require (
 	google.golang.org/api v0.70.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220222213610-43724f9ea8cf // indirect
-	google.golang.org/grpc v1.44.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
@@ -151,8 +154,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	inet.af/netaddr v0.0.0-20210903134321-85fa6c94624e // indirect
-	k8s.io/api v0.23.6 // indirect
-	k8s.io/apiextensions-apiserver v0.23.5 // indirect
 	k8s.io/component-base v0.23.5 // indirect
 	k8s.io/klog/v2 v2.30.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65 // indirect

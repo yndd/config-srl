@@ -54,8 +54,8 @@ type IFSrlConfig interface {
 	SetDeletionPolicy(r nddv1.DeletionPolicy)
 	GetHierPaths() map[string][]string
 	SetHierPaths(n map[string][]string)
-	GetNetworkNodeReference() *nddv1.Reference
-	SetNetworkNodeReference(r *nddv1.Reference)
+	GetTargetReference() *nddv1.Reference
+	SetTargetReference(r *nddv1.Reference)
 	GetRootPaths() []string
 	SetRootPaths(n []string)
 
