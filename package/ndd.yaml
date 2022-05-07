@@ -26,7 +26,7 @@ spec:
       containers:
       - container:
           name: kube-rbac-proxy
-          image: yndd/ndd-config-srl-config-proxy:latest
+          image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
       - container:
           name: controller
           image: yndd/ndd-config-srl-provider:latest
@@ -34,7 +34,7 @@ spec:
         - {name: webhook, webhook: true, service: true, certificate: true, port: 443, target-port: 9443}
         - {name: metrics, service: true, port: 8443, target-port: 443}
         - {name: profiler, volume: true}
-    - name: config-proxy
+    - name: worker
       type: statefulset
       permissionRequests:
       - apiGroups: ["*"]
@@ -46,10 +46,10 @@ spec:
       containers:
       - container:
           name: kube-rbac-proxy
-          image: yndd/ndd-config-srl-config-proxy:latest
+          image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
       - container:
           name: controller
-          image: yndd/ndd-config-srl-config-proxy:latest
+          image: yndd/ndd-config-srl-worker:latest
         extras:
         - {name: gnmi, service: true, certificate: true, port: 9999, target-port: 9999}
         - {name: metrics, service: true,  port: 8443, target-port: 443}

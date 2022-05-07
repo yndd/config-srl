@@ -209,6 +209,7 @@ func (inv *inventory) updateInventory(ctx context.Context) error {
 				if controllerPodKey == inv.getControllerPodKey(podSpec.Name) {
 					if _, ok := inv.allocations[podName]; !ok {
 						inv.allocations[podName] = &targets{}
+						inv.allocations[podName].targets = make(map[string]struct{})
 					}
 					inv.allocations[podName].targets[getFqTargetName(t.GetNamespace(), t.GetName())] = struct{}{}
 				}

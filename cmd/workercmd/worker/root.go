@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package configproxy
+package worker
 
 import (
 	"os"
