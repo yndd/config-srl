@@ -197,7 +197,7 @@ func getProxyArgs() []string {
 func (inv *inventory) getArgs() []string {
 	cnArg := strings.Join([]string{"--controller-name", inv.crInfo.controllerConfigName}, "=")
 	dkArg := strings.Join([]string{"--deployment-kind", "distributed"}, "=")
-	cnsArg := strings.Join([]string{"--consul-namespace", "consul"}, "=")
+	cnsArg := strings.Join([]string{"--consul-namespace", inv.crInfo.ctrlMetaCfg.Spec.ConsulNamespace}, "=")
 	return []string{
 		"start",
 		cnArg,

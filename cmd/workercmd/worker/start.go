@@ -30,11 +30,12 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/yndd/ndd-runtime/pkg/model"
 
+	pkgmetav1 "github.com/yndd/ndd-core/apis/pkg/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"github.com/yndd/ndd-config-srl/internal/register"
+	"github.com/yndd/ndd-config-srl/internal/registrator"
 	"github.com/yndd/ndd-config-srl/internal/target/srl"
 	"github.com/yndd/ndd-config-srl/pkg/ygotsrl"
 	"github.com/yndd/ndd-runtime/pkg/logging"
@@ -100,19 +101,23 @@ var startCmd = &cobra.Command{
 
 		// register the worker as a aservice to consul
 		if deploymentKind == string(DeploymentKindDistributed) {
-			reg, err := register.New(cmd.Context(),
-				register.WithClient(resource.ClientApplicator{
+			reg, err := registrator.NewConsulRegistrator(cmd.Context(), consulNamespace, "kind-dc1",
+				registrator.WithClient(resource.ClientApplicator{
 					Client:     client,
 					Applicator: resource.NewAPIPatchingApplicator(client),
 				}),
-				register.WithRegisterKind(strings.Join([]string{controllerName, "worker"}, "-")),
-				register.WithConsulNamespace(consulNamespace),
-				register.WithLogger(logging.NewLogrLogger(zlog.WithName("consul register"))),
+				registrator.WithLogger(logging.NewLogrLogger(zlog.WithName("consul register"))),
+				registrator.WithServiceConfig(
+					strings.Join([]string{controllerName, "worker"}, "-"),
+					os.Getenv("POD_IP"),
+					pkgmetav1.GnmiServerPort,
+				),
 			)
+
 			if err != nil {
-				return errors.Wrap(err, "Cannot start consul register")
+				return errors.Wrap(err, "Cannot start consul registrator")
 			}
-			reg.RegisterService(cmd.Context())
+			reg.Register(cmd.Context())
 		}
 
 		// initialize the target registry and register the vendor type

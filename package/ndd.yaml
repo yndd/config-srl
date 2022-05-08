@@ -13,46 +13,6 @@ spec:
       verbs: [get, list, watch, update, patch, create, delete]
     #apis:
     #- {group: srl.config.ndd.yndd.io, version: v1alpha1, kind: srlconfig}
-    pods:
-    - name: provider
-      type: statefulset
-      permissionRequests:
-      - apiGroups: ["*"]
-        resources: [pods]
-        verbs: [get, list, watch, update, patch, create, delete]
-      - apiGroups: [dvr.ndd.yndd.io]
-        resources: [targets, targets/status]
-        verbs: [get, list, watch, update, patch, create, delete]
-      containers:
-      - container:
-          name: kube-rbac-proxy
-          image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
-      - container:
-          name: controller
-          image: yndd/ndd-config-srl-provider:latest
-        extras:
-        - {name: webhook, webhook: true, service: true, certificate: true, port: 443, target-port: 9443}
-        - {name: metrics, service: true, port: 8443, target-port: 443}
-        - {name: profiler, volume: true}
-    - name: worker
-      type: statefulset
-      permissionRequests:
-      - apiGroups: ["*"]
-        resources: [secrets]
-        verbs: [get, list, watch]
-      - apiGroups: [dvr.ndd.yndd.io]
-        resources: [targets]
-        verbs: [get, list, watch]
-      containers:
-      - container:
-          name: kube-rbac-proxy
-          image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
-      - container:
-          name: controller
-          image: yndd/ndd-config-srl-worker:latest
-        extras:
-        - {name: gnmi, service: true, certificate: true, port: 9999, target-port: 9999}
-        - {name: metrics, service: true,  port: 8443, target-port: 443}
-        - {name: profiler, volume: true}
+    
           
 

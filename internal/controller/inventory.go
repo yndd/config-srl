@@ -62,7 +62,7 @@ type crInfo struct {
 	targetName           string
 	targetNamespace      string
 	crdNames             []string
-	pkgInfo              *pkgmetav1.Provider
+	ctrlMetaCfg          *pkgmetav1.ControllerConfig
 }
 
 func newInventory(client resource.ClientApplicator, l logging.Logger, allocallocationInfo *crInfo) *inventory {
@@ -84,7 +84,7 @@ func newInventory(client resource.ClientApplicator, l logging.Logger, allocalloc
 // existing.
 // Also the inventory annotatiosn are initialized
 func (inv *inventory) validateAnnotations(a map[string]string) bool {
-	for _, podSpec := range inv.crInfo.pkgInfo.Spec.Controller.Pods {
+	for _, podSpec := range inv.crInfo.ctrlMetaCfg.Spec.Pods {
 		podName, ok := a[inv.getControllerPodKey(podSpec.Name)]
 		if !ok {
 			// reset the annotation in the inventory
@@ -114,7 +114,7 @@ func (inv *inventory) getAnnotationKeys() []string {
 // getPods initializes the pods in the inventory and returns if they are found
 func (inv *inventory) getPods(ctx context.Context) (bool, error) {
 	log := inv.log.WithValues("target", inv.crInfo.targetName)
-	for _, podSpec := range inv.crInfo.pkgInfo.Spec.Controller.Pods {
+	for _, podSpec := range inv.crInfo.ctrlMetaCfg.Spec.Pods {
 
 		opts := []client.ListOption{
 			client.InNamespace(inv.crInfo.deployNamespace),
@@ -205,7 +205,7 @@ func (inv *inventory) updateInventory(ctx context.Context) error {
 		// based on the allocations, check if the controllerPodKey exist
 
 		for controllerPodKey, podName := range t.GetAnnotations() {
-			for _, podSpec := range inv.crInfo.pkgInfo.Spec.Controller.Pods {
+			for _, podSpec := range inv.crInfo.ctrlMetaCfg.Spec.Pods {
 				if controllerPodKey == inv.getControllerPodKey(podSpec.Name) {
 					if _, ok := inv.allocations[podName]; !ok {
 						inv.allocations[podName] = &targets{}
@@ -228,7 +228,7 @@ func (inv *inventory) validatePod(ctx context.Context) (*podObservation, error) 
 	// list pods
 	podList := &corev1.PodList{}
 	if err := inv.client.List(ctx, podList,
-		client.MatchingLabels(map[string]string{parentLabel: inv.crInfo.pkgInfo.Name})); resource.IgnoreNotFound(err) != nil {
+		client.MatchingLabels(map[string]string{parentLabel: inv.crInfo.ctrlMetaCfg.Name})); resource.IgnoreNotFound(err) != nil {
 		log.Debug(errGetPodList, "error", err)
 		return &podObservation{}, err
 	}
@@ -258,7 +258,7 @@ func (inv *inventory) allocate() error {
 	log.Debug("allocate...")
 	// find least loaded pod
 	// loop over the sfSetKeys
-	for _, podSpec := range inv.crInfo.pkgInfo.Spec.Controller.Pods {
+	for _, podSpec := range inv.crInfo.ctrlMetaCfg.Spec.Pods {
 		leastLoaded := 9999
 		var leastLoadedPodName string
 
@@ -316,7 +316,7 @@ func (inv *inventory) deploy(ctx context.Context, crds []extv1.CustomResourceDef
 		return err
 	}
 
-	for _, podSpec := range inv.crInfo.pkgInfo.Spec.Controller.Pods {
+	for _, podSpec := range inv.crInfo.ctrlMetaCfg.Spec.Pods {
 		for _, c := range podSpec.Containers {
 			for _, cr := range inv.renderClusterRoles(podSpec, c, r, crds) {
 				cr := cr // Pin range variable so we can take its address.

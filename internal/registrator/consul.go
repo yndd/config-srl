@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package register
+package registrator
 
 import (
 	"context"
@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/consul/api"
-	pkgmetav1 "github.com/yndd/ndd-core/apis/pkg/meta/v1"
+
 	"github.com/yndd/ndd-runtime/pkg/logging"
 	"github.com/yndd/ndd-target-runtime/pkg/resource"
 	corev1 "k8s.io/api/core/v1"
@@ -33,59 +33,11 @@ import (
 )
 
 const (
-	defaultTimout                    = 1 * time.Second
-	defaultRegistrationCheckInterval = 5 * time.Second
-	defaultMaxServiceFail            = 3
+	defaultDCName     = "kind-dc1"
+	defaultConsulPort = "8500"
 )
 
-// Option can be used to manipulate Register config.
-type Option func(Register)
-
-// TargetController defines the interfaces for the target controller
-type Register interface {
-	//options
-	// add a logger to Register
-	WithLogger(log logging.Logger)
-	// add a k8s client to Register
-	WithClient(c resource.ClientApplicator)
-	// add a consulNamespace to Register
-	WithConsulNamespace(string)
-	// add a register kinf to Register
-	WithRegisterKind(string)
-	// RegisterService
-	RegisterService(ctx context.Context)
-}
-
-// WithLogger adds a logger to the register
-func WithLogger(l logging.Logger) Option {
-	return func(o Register) {
-		o.WithLogger(l)
-	}
-}
-
-// WithClient adds a k8s client to the register.
-func WithClient(c resource.ClientApplicator) Option {
-	return func(o Register) {
-		o.WithClient(c)
-	}
-}
-
-// WithConsulNamespce adds the consul namespace to the register
-func WithConsulNamespace(ns string) Option {
-	return func(o Register) {
-		o.WithConsulNamespace(ns)
-	}
-}
-
-// WithRegisterKind adds the kind to the register
-func WithRegisterKind(n string) Option {
-	return func(o Register) {
-		o.WithRegisterKind(n)
-	}
-}
-
-type registerConfig struct {
-	kind       string // provider or worker
+type consulConfig struct {
 	namespace  string // namespace in which consul is deployed
 	address    string // address of the consul client
 	datacenter string // default kind-dc1
@@ -94,9 +46,10 @@ type registerConfig struct {
 	token      string
 }
 
-// registerImpl implements the register interface
-type registerImpl struct {
-	config *registerConfig
+// consul implements the Registrator interface
+type consul struct {
+	serviceConfig *serviceConfig
+	consulConfig  *consulConfig
 	// kubernetes
 	client resource.ClientApplicator
 	// consul
@@ -108,49 +61,57 @@ type registerImpl struct {
 	log logging.Logger
 }
 
-func New(ctx context.Context, opts ...Option) (Register, error) {
-	c := &registerImpl{
-		config: &registerConfig{},
+func NewConsulRegistrator(ctx context.Context, namespace, dcName string, opts ...Option) (Registrator, error) {
+
+	// if the namespace is not provided we initialize to consul namespace
+	if namespace == "" {
+		namespace = "consul"
+	}
+
+	r := &consul{
+		serviceConfig: &serviceConfig{},
+		consulConfig: &consulConfig{
+			namespace:  namespace,
+			datacenter: dcName,
+		},
 	}
 
 	for _, opt := range opts {
-		opt(c)
+		opt(r)
 	}
 
-	if err := c.initializeConsul(ctx); err != nil {
+	if err := r.init(ctx); err != nil {
 		return nil, err
 	}
 
-	return c, nil
+	return r, nil
 }
 
-func (c *registerImpl) WithLogger(l logging.Logger) {
-	c.log = l
+func (r *consul) WithLogger(l logging.Logger) {
+	r.log = l
 }
 
-func (c *registerImpl) WithClient(rc resource.ClientApplicator) {
-	c.client = rc
+func (r *consul) WithClient(rc resource.ClientApplicator) {
+	r.client = rc
 }
 
-func (c *registerImpl) WithConsulNamespace(ns string) {
-	c.config.namespace = ns
+func (r *consul) WithServiceInfo(name, ip string, port int) {
+	r.serviceConfig.name = name
+	r.serviceConfig.ip = ip
+	r.serviceConfig.port = port
 }
 
-func (c *registerImpl) WithRegisterKind(n string) {
-	c.config.kind = n
-}
-
-func (c *registerImpl) initializeConsul(ctx context.Context) error {
-	log := c.log.WithValues("Namespace", c.config.namespace)
-	log.Debug("consul daemonset not found")
+func (r *consul) init(ctx context.Context) error {
+	log := r.log.WithValues("Service", r.serviceConfig, "Namespace", r.consulConfig.namespace)
+	log.Debug("consul init, trying to find daemonset...")
 
 CONSULDAEMONSETPOD:
 	// get all the pods in the consul namespace
 	opts := []client.ListOption{
-		client.InNamespace(c.config.namespace),
+		client.InNamespace(r.consulConfig.namespace),
 	}
 	pods := &corev1.PodList{}
-	if err := c.client.List(ctx, pods, opts...); err != nil {
+	if err := r.client.List(ctx, pods, opts...); err != nil {
 		return err
 	}
 
@@ -176,8 +137,8 @@ CONSULDAEMONSETPOD:
 				pod.Spec.NodeName == os.Getenv("NODE_NAME") {
 				//pod.Status.HostIP == os.Getenv("Node_IP") {
 				found = true
-				c.config.address = strings.Join([]string{pod.Status.PodIP, "8500"}, ":")
-				c.config.datacenter = "kind-dc1"
+				r.consulConfig.address = strings.Join([]string{pod.Status.PodIP, defaultConsulPort}, ":")
+				r.consulConfig.datacenter = defaultDCName
 				break
 			}
 		default:
@@ -191,38 +152,42 @@ CONSULDAEMONSETPOD:
 		time.Sleep(defaultTimout)
 		goto CONSULDAEMONSETPOD
 	}
-	log.Debug("consul daemonset found", "address", c.config.address, "datacenter", c.config.datacenter)
+	log.Debug("consul daemonset found", "address", r.consulConfig.address, "datacenter", r.consulConfig.datacenter)
 
 	return nil
 }
 
-func (c *registerImpl) RegisterService(ctx context.Context) {
-	go c.registerService(ctx)
+func (r *consul) Register(ctx context.Context) {
+	go r.registerService(ctx)
 }
 
-func (c *registerImpl) registerService(ctx context.Context) error {
-	log := c.log.WithValues("address", c.config.address)
+func (r *consul) DeRegister(ctx context.Context) {
+	// TODO
+}
+
+func (r *consul) registerService(ctx context.Context) error {
+	log := r.log.WithValues("address", r.consulConfig.address)
 
 	clientConfig := &api.Config{
-		Address:    c.config.address,
+		Address:    r.consulConfig.address,
 		Scheme:     "http",
-		Datacenter: c.config.datacenter,
-		Token:      c.config.token,
+		Datacenter: r.consulConfig.datacenter,
+		Token:      r.consulConfig.token,
 	}
-	if c.config.username != "" && c.config.password != "" {
+	if r.consulConfig.username != "" && r.consulConfig.password != "" {
 		clientConfig.HttpAuth = &api.HttpBasicAuth{
-			Username: c.config.username,
-			Password: c.config.password,
+			Username: r.consulConfig.username,
+			Password: r.consulConfig.password,
 		}
 	}
 INITCONSUL:
 	var err error
-	if c.consulClient, err = api.NewClient(clientConfig); err != nil {
+	if r.consulClient, err = api.NewClient(clientConfig); err != nil {
 		log.Debug("failed to connect to consul", "error", err)
 		time.Sleep(1 * time.Second)
 		goto INITCONSUL
 	}
-	self, err := c.consulClient.Agent().Self()
+	self, err := r.consulClient.Agent().Self()
 	if err != nil {
 		log.Debug("failed to connect to consul", "error", err)
 		time.Sleep(1 * time.Second)
@@ -237,9 +202,9 @@ INITCONSUL:
 
 	service := &api.AgentServiceRegistration{
 		ID:      os.Getenv("POD_NAME"),
-		Name:    c.config.kind,
-		Address: os.Getenv("POD_IP"),
-		Port:    pkgmetav1.GnmiServerPort,
+		Name:    r.serviceConfig.name,
+		Address: r.serviceConfig.ip,
+		Port:    r.serviceConfig.port,
 		//Tags:    p.Cfg.ServiceRegistration.Tags,
 		Checks: api.AgentServiceChecks{
 			{
@@ -252,7 +217,7 @@ INITCONSUL:
 	ttlCheckID := "service:" + os.Getenv("POD_NAME")
 
 	service.Checks = append(service.Checks, &api.AgentServiceCheck{
-		GRPC:                           os.Getenv("POD_IP") + ":" + strconv.Itoa(pkgmetav1.GnmiServerPort),
+		GRPC:                           r.serviceConfig.ip + ":" + strconv.Itoa(r.serviceConfig.port),
 		GRPCUseTLS:                     true,
 		Interval:                       defaultRegistrationCheckInterval.String(),
 		TLSSkipVerify:                  true,
@@ -263,24 +228,24 @@ INITCONSUL:
 	b, _ := json.Marshal(service)
 	log.Debug("consul register service", "service", string(b))
 
-	if err := c.consulClient.Agent().ServiceRegister(service); err != nil {
+	if err := r.consulClient.Agent().ServiceRegister(service); err != nil {
 		log.Debug("consul register service failed", "error", err)
 		return err
 	}
 
-	if err := c.consulClient.Agent().UpdateTTL(ttlCheckID, "", api.HealthPassing); err != nil {
+	if err := r.consulClient.Agent().UpdateTTL(ttlCheckID, "", api.HealthPassing); err != nil {
 		log.Debug("consul failed to pass TTL check", "error", err)
 	}
 	ticker := time.NewTicker(defaultRegistrationCheckInterval / 2)
 	for {
 		select {
 		case <-ticker.C:
-			err = c.consulClient.Agent().UpdateTTL(ttlCheckID, "", api.HealthPassing)
+			err = r.consulClient.Agent().UpdateTTL(ttlCheckID, "", api.HealthPassing)
 			if err != nil {
 				log.Debug("consul failed to pass TTL check", "error", err)
 			}
 		case <-ctx.Done():
-			c.consulClient.Agent().UpdateTTL(ttlCheckID, ctx.Err().Error(), api.HealthCritical)
+			r.consulClient.Agent().UpdateTTL(ttlCheckID, ctx.Err().Error(), api.HealthCritical)
 			ticker.Stop()
 			goto INITCONSUL
 		}
