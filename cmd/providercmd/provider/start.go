@@ -55,6 +55,9 @@ var (
 	grpcServerAddress    string
 	grpcQueryAddress     string
 	autoPilot            bool
+	controllerName       string
+	deploymentKind       string // integrated or distributed
+	consulNamespace      string
 )
 
 // startCmd represents the start command for the network device driver
@@ -151,6 +154,10 @@ func init() {
 	startCmd.Flags().StringVarP(&grpcQueryAddress, "grpc-query-address", "", "", "Validation query address.")
 	startCmd.Flags().BoolVarP(&autoPilot, "autopilot", "a", true,
 		"Apply delta/diff changes to the config automatically when set to true, if set to false the provider will report the delta and the operator should intervene what to do with the delta/diffs")
+	startCmd.Flags().StringVarP(&controllerName, "controller-name", "", "", "controllername identifies the name of the controller")
+	startCmd.Flags().StringVarP(&deploymentKind, "deployment-kind", "", "integrated", "DeploymentKind identifies wether this is an integarted and distributed deployment")
+	startCmd.Flags().StringVarP(&consulNamespace, "consul-namespace", "", "consul", "Namespace in which consul is deployed")
+
 }
 
 func nddCtlrOptions(c int) controller.Options {

@@ -13,7 +13,7 @@ IMAGE_TAG_BASE ?= yndd/ndd-config-srl
 # Image URL to use all building/pushing image targets
 IMG ?= $(IMAGE_TAG_BASE)-controller:$(VERSION)
 IMG_PROVIDER ?= $(IMAGE_TAG_BASE)-provider:$(VERSION)
-IMG_CONFIGPROXY ?= $(IMAGE_TAG_BASE)-config-proxy:$(VERSION)
+IMG_WORKER ?= $(IMAGE_TAG_BASE)-worker:$(VERSION)
 # Package
 PKG ?= $(IMAGE_TAG_BASE)
 
@@ -81,7 +81,7 @@ run: generate fmt vet ## Run a controller from your host.
 docker-build: test ## Build docker image with the manager.
 	docker build -f DockerfileController -t ${IMG} .
 	docker build -f DockerfileProvider -t ${IMG_PROVIDER} .
-	docker build -f DockerfileConfigProxy -t ${IMG_CONFIGPROXY} .
+	docker build -f DockerfileWorker -t ${IMG_WORKER} .
 
 docker-build-controller: test ## Build docker images.
 	docker build -f DockerfileController -t ${IMG} .
@@ -89,13 +89,13 @@ docker-build-controller: test ## Build docker images.
 docker-build-provider: test ## Build docker images.
 	docker build -f DockerfileProvider -t ${IMG_PROVIDER} .
 
-docker-build-configproxy: test ## Build docker images.
-	docker build -f DockerfileConfigProxy -t ${IMG_CONFIGPROXY} .
+docker-build-worker: test ## Build docker images.
+	docker build -f DockerfileWorker -t ${IMG_WORKER} .
 
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
 	docker push ${IMG_PROVIDER}
-	docker push ${IMG_CONFIGPROXY}
+	docker push ${IMG_WORKER}
 
 docker-push-controller: ## Push docker images.
 	docker push ${IMG}
@@ -103,8 +103,8 @@ docker-push-controller: ## Push docker images.
 docker-push-provider: ## Push docker images.
 	docker push ${IMG_PROVIDER}
 
-docker-push-configproxy: ## Push docker images.
-	docker push ${IMG_CONFIGPROXY}
+docker-push-worker: ## Push docker images.
+	docker push ${IMG_WORKER}
 
 package-build: ## build ndd package.
 	rm -rf package/ndd-*

@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/go-logr/logr v1.2.0
+	github.com/hashicorp/consul/api v1.12.0
 	github.com/jetstack/cert-manager v1.7.1
 	github.com/karimra/gnmic v0.24.1
 	github.com/openconfig/gnmi v0.0.0-20220131173555-39aa74195f0d
@@ -12,12 +13,11 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/profile v1.6.0
 	github.com/spf13/cobra v1.4.0
-	github.com/yndd/ndd-core v0.2.5
+	github.com/yndd/ndd-core v0.2.10
 	github.com/yndd/ndd-runtime v0.5.8
-	github.com/yndd/ndd-target-runtime v0.0.32
+	github.com/yndd/ndd-target-runtime v0.0.37
 	github.com/yndd/ndd-yang v0.2.8
 	github.com/yndd/nddo-runtime v0.0.76
-	github.com/yndd/nddp-srl3 v0.1.7
 	github.com/yndd/nddp-system v0.2.4
 	google.golang.org/grpc v1.44.0
 	k8s.io/api v0.23.6
@@ -78,11 +78,11 @@ require (
 	github.com/gosimple/unidecode v1.0.0 // indirect
 	github.com/hairyhenderson/gomplate/v3 v3.10.0 // indirect
 	github.com/hairyhenderson/toml v0.4.2-0.20210923231440-40456b8e66cf // indirect
-	github.com/hashicorp/consul/api v1.12.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.1.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
+	github.com/hashicorp/go-msgpack v1.1.5 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.0 // indirect
 	github.com/hashicorp/go-rootcerts v1.0.2 // indirect

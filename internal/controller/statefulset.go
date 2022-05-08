@@ -62,7 +62,7 @@ func (inv *inventory) renderStatefulSet(podSpec pkgmetav1.PodSpec, revision pkgv
 					SecurityContext:    getPodSecurityContext(),
 					ServiceAccountName: inv.renderServiceAccount(podSpec, revision).GetName(),
 					ImagePullSecrets:   revision.GetPackagePullSecrets(),
-					Containers:         getContainers(podSpec, revision.GetPackagePullPolicy()),
+					Containers:         inv.getContainers(podSpec, revision.GetPackagePullPolicy()),
 					Volumes:            inv.getVolumes(podSpec),
 				},
 			},
@@ -129,21 +129,42 @@ func getEnv() []corev1.EnvVar {
 			},
 		},
 	}
+	envNodeName := corev1.EnvVar{
+		Name: "NODE_NAME",
+		ValueFrom: &corev1.EnvVarSource{
+			FieldRef: &corev1.ObjectFieldSelector{
+				APIVersion: "v1",
+				FieldPath:  "spec.nodeName",
+			},
+		},
+	}
+	envNodeIP := corev1.EnvVar{
+		Name: "NODE_IP",
+		ValueFrom: &corev1.EnvVarSource{
+			FieldRef: &corev1.ObjectFieldSelector{
+				APIVersion: "v1",
+				FieldPath:  "status.hostIP",
+			},
+		},
+	}
+
 	return []corev1.EnvVar{
 		envNameSpace,
 		envPodIP,
 		envPodName,
+		envNodeName,
+		envNodeIP,
 	}
 }
 
-func getContainers(podSpec pkgmetav1.PodSpec, pullPolicy *corev1.PullPolicy) []corev1.Container {
+func (inv *inventory) getContainers(podSpec pkgmetav1.PodSpec, pullPolicy *corev1.PullPolicy) []corev1.Container {
 	containers := []corev1.Container{}
 
 	for _, container := range podSpec.Containers {
 		if container.Container.Name == "kube-rbac-proxy" {
 			containers = append(containers, getKubeProxyContainer())
 		} else {
-			containers = append(containers, getContainer(container, pullPolicy))
+			containers = append(containers, inv.getContainer(container, pullPolicy))
 		}
 	}
 
@@ -173,9 +194,15 @@ func getProxyArgs() []string {
 	}
 }
 
-func getArgs() []string {
+func (inv *inventory) getArgs() []string {
+	cnArg := strings.Join([]string{"--controller-name", inv.crInfo.controllerConfigName}, "=")
+	dkArg := strings.Join([]string{"--deployment-kind", "distributed"}, "=")
+	cnsArg := strings.Join([]string{"--consul-namespace", inv.crInfo.ctrlMetaCfg.Spec.ConsulNamespace}, "=")
 	return []string{
 		"start",
+		cnArg,
+		dkArg,
+		cnsArg,
 		"--debug",
 	}
 }
@@ -228,13 +255,13 @@ func (inv *inventory) getVolumes(podSpec pkgmetav1.PodSpec) []corev1.Volume {
 	return volume
 }
 
-func getContainer(c pkgmetav1.ContainerSpec, pullPolicy *corev1.PullPolicy) corev1.Container {
+func (inv *inventory) getContainer(c pkgmetav1.ContainerSpec, pullPolicy *corev1.PullPolicy) corev1.Container {
 	return corev1.Container{
 		Name:            c.Container.Name,
 		Image:           c.Container.Image,
 		ImagePullPolicy: *pullPolicy,
 		SecurityContext: getSecurityContext(),
-		Args:            getArgs(),
+		Args:            inv.getArgs(),
 		Env:             getEnv(),
 		Command: []string{
 			containerStartupCmd,

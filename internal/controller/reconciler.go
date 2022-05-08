@@ -47,7 +47,7 @@ const (
 	errGetTargetList           = "cannot get target cr list"
 	errGetPod                  = "cannot get pod cr"
 	errGetPodList              = "cannot get pod cr list"
-	errGetPkgMeta              = "cannot get package meta cr"
+	errGetCtrlMetaCfg          = "cannot get controller meta config cr"
 	errGetCrd                  = "cannot get crd"
 	errUpdateStatus            = "cannot update status"
 	errApplyStatfullSet        = "cannot apply statefulset"
@@ -202,14 +202,19 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		return reconcile.Result{Requeue: true}, errors.Wrap(err, "cannot get spec")
 	}
 
-	// get the provider revision to get the information for the controller to operate
-	pkgMeta := &pkgmetav1.Provider{}
-	if err := r.client.Get(ctx, types.NamespacedName{Namespace: r.namespace, Name: r.controllerConfigName}, pkgMeta); err != nil {
-		log.Debug(errGetPkgMeta, "error", err)
-		return reconcile.Result{Requeue: true}, errors.Wrap(err, errGetPkgMeta)
+	// get the ctrlCfg to get the information for the controller to operate
+	ctrlMetaCfg := &pkgmetav1.ControllerConfig{}
+	if err := r.client.Get(ctx,
+		types.NamespacedName{
+			Namespace: r.namespace,
+			Name:      r.controllerConfigName,
+		}, ctrlMetaCfg); err != nil {
+
+		log.Debug(errGetCtrlMetaCfg, "error", err)
+		return reconcile.Result{Requeue: true}, errors.Wrap(err, errGetCtrlMetaCfg)
 	}
 
-	log.Debug("controller config", "config", pkgMeta.Spec)
+	log.Debug("controller config", "config", ctrlMetaCfg.Spec)
 
 	// if expectedVendorType is unset we dont care about it and can proceed,
 	// if it is set we should see if the Target CR vendor type matches the
@@ -238,7 +243,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 		targetNamespace:      t.GetNamespace(),
 		targetName:           t.GetName(),
 		crdNames:             r.crdNames,
-		pkgInfo:              pkgMeta,
+		ctrlMetaCfg:          ctrlMetaCfg,
 	})
 	// validateAnnotations validate based on the pkgMeta spec if controller
 	// pod keys exists in the annotation. This indicates that an allocation was

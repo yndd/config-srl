@@ -26,7 +26,7 @@ import (
 
 // getControllerPodKey returns a controller pod key
 func (inv *inventory) getControllerPodKey(n string) string {
-	return strings.Join([]string{inv.crInfo.pkgInfo.GetName(), n}, "-")
+	return strings.Join([]string{inv.crInfo.ctrlMetaCfg.GetName(), n}, "-")
 }
 
 func (inv *inventory) getDnsName(serviceName string, x ...string) string {

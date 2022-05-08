@@ -14,11 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package configproxy
+package worker
 
 import (
 	"os"
 	"reflect"
+	"strings"
 	"time"
 
 	"net/http"
@@ -29,10 +30,12 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/yndd/ndd-runtime/pkg/model"
 
+	pkgmetav1 "github.com/yndd/ndd-core/apis/pkg/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	"github.com/yndd/ndd-config-srl/internal/registrator"
 	"github.com/yndd/ndd-config-srl/internal/target/srl"
 	"github.com/yndd/ndd-config-srl/pkg/ygotsrl"
 	"github.com/yndd/ndd-runtime/pkg/logging"
@@ -57,6 +60,16 @@ var (
 	grpcServerAddress    string
 	grpcQueryAddress     string
 	autoPilot            bool
+	controllerName       string
+	deploymentKind       string // integrated or distributed
+	consulNamespace      string
+)
+
+type DeploymentKind string
+
+const (
+	DeploymentKindIntegrated  DeploymentKind = "integrated"
+	DeploymentKindDistributed DeploymentKind = "distributed"
 )
 
 // startCmd represents the start command for the network device driver
@@ -84,6 +97,28 @@ var startCmd = &cobra.Command{
 		client, err := getClient(scheme)
 		if err != nil {
 			return err
+		}
+
+		// register the worker as a aservice to consul
+		if deploymentKind == string(DeploymentKindDistributed) {
+			reg, err := registrator.NewConsulRegistrator(cmd.Context(), consulNamespace, "kind-dc1",
+				registrator.WithClient(resource.ClientApplicator{
+					Client:     client,
+					Applicator: resource.NewAPIPatchingApplicator(client),
+				}),
+				registrator.WithLogger(logging.NewLogrLogger(zlog.WithName("consul register"))),
+				registrator.WithServiceConfig(
+					strings.Join([]string{controllerName, "worker"}, "-"),
+					os.Getenv("POD_NAME"),
+					os.Getenv("POD_IP"),
+					pkgmetav1.GnmiServerPort,
+				),
+			)
+
+			if err != nil {
+				return errors.Wrap(err, "Cannot start consul registrator")
+			}
+			reg.Register(cmd.Context())
 		}
 
 		// initialize the target registry and register the vendor type
@@ -136,6 +171,9 @@ func init() {
 	startCmd.Flags().StringVarP(&grpcQueryAddress, "grpc-query-address", "", "", "Validation query address.")
 	startCmd.Flags().BoolVarP(&autoPilot, "autopilot", "a", true,
 		"Apply delta/diff changes to the config automatically when set to true, if set to false the provider will report the delta and the operator should intervene what to do with the delta/diffs")
+	startCmd.Flags().StringVarP(&controllerName, "controller-name", "", "", "controller-name identifies the name of the controller")
+	startCmd.Flags().StringVarP(&deploymentKind, "deployment-kind", "", "distributed", "DeploymentKind identifies whether this is an integarted and distributed deployment")
+	startCmd.Flags().StringVarP(&consulNamespace, "consul-namespace", "", "consul", "Namespace in which consul is deployed")
 }
 
 func nddCtlrOptions(c int) controller.Options {

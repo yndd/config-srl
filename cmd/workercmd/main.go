@@ -16,8 +16,8 @@ limitations under the License.
 
 package main
 
-import "github.com/yndd/ndd-config-srl/cmd/configproxycmd/configproxy"
+import "github.com/yndd/ndd-config-srl/cmd/workercmd/worker"
 
 func main() {
-	configproxy.Execute()
+	worker.Execute()
 }
