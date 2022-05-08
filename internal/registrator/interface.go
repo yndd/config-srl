@@ -41,7 +41,7 @@ type Registrator interface {
 	// add a k8s client to the Registrator
 	WithClient(c resource.ClientApplicator)
 	// add a serviceInfo to the Registrator
-	WithServiceInfo(name, ip string, port int)
+	WithServiceInfo(name, id, ip string, port int)
 	// Register
 	Register(ctx context.Context)
 	// DeRegister
@@ -63,14 +63,15 @@ func WithClient(c resource.ClientApplicator) Option {
 }
 
 // WithServiceConfig adds the service configuration to the Registrator
-func WithServiceConfig(name, ip string, port int) Option {
+func WithServiceConfig(name, id, ip string, port int) Option {
 	return func(o Registrator) {
-		o.WithServiceInfo(name, ip, port)
+		o.WithServiceInfo(name, id, ip, port)
 	}
 }
 
 type serviceConfig struct {
 	name string // service name e.g. provider or worker
+	id   string // service instance
 	port int    // service port
 	ip   string // service IP
 }

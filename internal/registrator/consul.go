@@ -93,8 +93,9 @@ func (r *consul) WithClient(rc resource.ClientApplicator) {
 	r.client = rc
 }
 
-func (r *consul) WithServiceInfo(name, ip string, port int) {
+func (r *consul) WithServiceInfo(name, id, ip string, port int) {
 	r.serviceConfig.name = name
+	r.serviceConfig.id = id
 	r.serviceConfig.ip = ip
 	r.serviceConfig.port = port
 }
@@ -203,7 +204,7 @@ INITCONSUL:
 	defer cancel()
 
 	service := &api.AgentServiceRegistration{
-		ID:      os.Getenv("POD_NAME"),
+		ID:      r.serviceConfig.id,
 		Name:    r.serviceConfig.name,
 		Address: r.serviceConfig.ip,
 		Port:    r.serviceConfig.port,

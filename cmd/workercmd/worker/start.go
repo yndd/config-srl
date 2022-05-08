@@ -109,6 +109,7 @@ var startCmd = &cobra.Command{
 				registrator.WithLogger(logging.NewLogrLogger(zlog.WithName("consul register"))),
 				registrator.WithServiceConfig(
 					strings.Join([]string{controllerName, "worker"}, "-"),
+					os.Getenv("POD_NAME"),
 					os.Getenv("POD_IP"),
 					pkgmetav1.GnmiServerPort,
 				),
