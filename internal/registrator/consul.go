@@ -54,10 +54,7 @@ type consul struct {
 	client resource.ClientApplicator
 	// consul
 	consulClient *api.Client
-	// server
-
-	//ctx context.Context
-	//cfn context.CancelFunc
+	stopCh chan struct{} // used to stop the registration
 	log logging.Logger
 }
 
@@ -74,6 +71,7 @@ func NewConsulRegistrator(ctx context.Context, namespace, dcName string, opts ..
 			namespace:  namespace,
 			datacenter: dcName,
 		},
+		stopCh: make(chan struct{}),
 	}
 
 	for _, opt := range opts {
@@ -162,11 +160,15 @@ func (r *consul) Register(ctx context.Context) {
 }
 
 func (r *consul) DeRegister(ctx context.Context) {
-	// TODO
+	log := r.log.WithValues("Service", r.serviceConfig, "Namespace", r.consulConfig.namespace)
+	log.Debug("Deregister...")
+
+	close(r.stopCh)
 }
 
 func (r *consul) registerService(ctx context.Context) error {
-	log := r.log.WithValues("address", r.consulConfig.address)
+	log := r.log.WithValues("Service", r.serviceConfig, "Consul", r.consulConfig)
+	log.Debug("Register...")
 
 	clientConfig := &api.Config{
 		Address:    r.consulConfig.address,
@@ -248,7 +250,11 @@ INITCONSUL:
 			r.consulClient.Agent().UpdateTTL(ttlCheckID, ctx.Err().Error(), api.HealthCritical)
 			ticker.Stop()
 			goto INITCONSUL
+		case <-r.stopCh:
+			r.log.Debug("deregister...")
+			r.consulClient.Agent().ServiceDeregister(os.Getenv("POD_NAME"))
+			ticker.Stop()
+			return nil
 		}
 	}
-	//return nil
 }
