@@ -33,6 +33,7 @@ mkfile_dir := $(dir $(mkfile_path))
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
+.PHONY: all
 all: build
 
 ##@ General
@@ -48,19 +49,23 @@ all: build
 # More info on the awk command:
 # http://linuxcommand.org/lc3_adv_awk.php
 
+.PHONY: help
 help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 ##@ Development
 
+.PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	rm -rf package/crds/*
 	$(CONTROLLER_GEN) crd webhook paths="./..." output:crd:artifacts:config=package/crds
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
+.PHONY: fmt
 fmt: ## Run go fmt against code.
 	go fmt ./...
 
+.PHONY: vet
 vet: ## Run go vet against code.
 	go vet ./...
 
@@ -70,36 +75,46 @@ test: generate fmt vet envtest ## Run tests.
 
 ##@ Build
 
+.PHONY: build
 build: generate fmt vet ## Build manager binary.
     @CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o $(mkfile_dir)/bin/manager $(mkfile_dir)/cmd/workercmd/main.go
 
+.PHONY: run
 run: generate fmt vet ## Run a controller from your host.
 	go run ./cmd/main.go
 
+.PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
 	docker build -f DockerfileReconciler -t ${IMG_RECONCILER} .
 	docker build -f DockerfileWorker -t ${IMG_WORKER} .
 
+.PHONY: docker-build-reconciler
 docker-build-reconciler: test ## Build docker images.
 	docker build -f DockerfileReconciler -t ${IMG_RECONCILER} .
 
+.PHONY: docker-build-worker
 docker-build-worker: test ## Build docker images.
 	docker build -f DockerfileWorker -t ${IMG_WORKER} .
 
+.PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG_RECONCILER}
 	docker push ${IMG_WORKER}
 
+.PHONY: docker-push-reconciler
 docker-push-reconciler: ## Push docker images.
 	docker push ${IMG_RECONCILER}
 
+.PHONY: docker-push-worker
 docker-push-worker: ## Push docker images.
 	docker push ${IMG_WORKER}
 
+.PHONY: package-build
 package-build: ## build ndd package.
 	rm -rf package/ndd-*
 	cd package;kubectl ndd package build -t provider;cd ..
 
+.PHONY: package-push
 package-push: ## build ndd package.
 	cd package;kubectl ndd package push ${PKG};cd ..
 
