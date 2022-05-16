@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package configproxy
+package reconciler
 
 import (
 	"os"
@@ -39,7 +39,7 @@ var (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "manager",
-	Short: "ndd srl config proxy",
+	Short: "srl config reconciler",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 	},
 }

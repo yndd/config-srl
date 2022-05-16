@@ -26,11 +26,10 @@ import (
 	"github.com/yndd/ndd-target-runtime/pkg/shared"
 	"github.com/yndd/ndd-target-runtime/pkg/ygotnddtarget"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 )
 
 // SetupDevice adds a controller that reconciles Devices.
-func Setup(mgr ctrl.Manager, o controller.Options, nddopts *shared.NddControllerOptions) error {
+func Setup(mgr ctrl.Manager, nddopts *shared.NddControllerOptions) error {
 	name := "dvr/" + strings.ToLower(targetv1.TargetKind)
 
 	r := target.NewReconciler(mgr,
@@ -42,7 +41,7 @@ func Setup(mgr ctrl.Manager, o controller.Options, nddopts *shared.NddController
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
-		WithOptions(o).
+		WithOptions(nddopts.Copts).
 		For(&targetv1.Target{}).
 		WithEventFilter(resource.IgnoreUpdateWithoutGenerationChangePredicate()).
 		Complete(r)

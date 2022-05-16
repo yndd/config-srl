@@ -14,11 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package configproxy
+package worker
 
 import (
 	"os"
 	"reflect"
+	"strconv"
 	"time"
 
 	"net/http"
@@ -29,41 +30,44 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/yndd/ndd-runtime/pkg/model"
 
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
+	itarget "github.com/yndd/ndd-config-srl/internal/controllers/target"
 	"github.com/yndd/ndd-config-srl/internal/target/srl"
 	"github.com/yndd/ndd-config-srl/pkg/ygotsrl"
+	pkgmetav1 "github.com/yndd/ndd-core/apis/pkg/meta/v1"
 	"github.com/yndd/ndd-runtime/pkg/logging"
 	"github.com/yndd/ndd-runtime/pkg/ratelimiter"
-	"github.com/yndd/ndd-target-runtime/pkg/resource"
+	"github.com/yndd/ndd-target-runtime/pkg/shared"
 	"github.com/yndd/ndd-target-runtime/pkg/target"
 	"github.com/yndd/ndd-target-runtime/pkg/targetcontroller"
 	"github.com/yndd/ndd-target-runtime/pkg/ygotnddtarget"
-	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	//+kubebuilder:scaffold:imports
 )
 
 var (
-	metricsAddr          string
-	probeAddr            string
-	enableLeaderElection bool
-	concurrency          int
-	pollInterval         time.Duration
-	namespace            string
-	podname              string
-	grpcServerAddress    string
-	grpcQueryAddress     string
-	autoPilot            bool
+	metricsAddr               string
+	probeAddr                 string
+	enableLeaderElection      bool
+	concurrency               int
+	pollInterval              time.Duration
+	namespace                 string
+	podname                   string
+	grpcServerAddress         string
+	grpcQueryAddress          string
+	autoPilot                 bool
+	serviceDiscovery          string
+	serviceDiscoveryNamespace string // todo initialization
+	controllerConfigName      string
 )
 
 // startCmd represents the start command for the network device driver
 var startCmd = &cobra.Command{
 	Use:          "start",
-	Short:        "start the srl ndd config proxy",
-	Long:         "start the srl ndd config proxy",
+	Short:        "start srl config worker",
+	Long:         "start srl config worker",
 	Aliases:      []string{"start"},
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -72,6 +76,7 @@ var startCmd = &cobra.Command{
 			// Only use a logr.Logger when debug is on
 			ctrl.SetLogger(zlog)
 		}
+		logger := logging.NewLogrLogger(zlog.WithName("worker"))
 
 		if profiler {
 			defer profile.Start().Stop()
@@ -80,45 +85,80 @@ var startCmd = &cobra.Command{
 			}()
 		}
 
-		// get k8s client
-		client, err := getClient(scheme)
-		if err != nil {
-			return err
-		}
-
 		// initialize the target registry and register the vendor type
 		tr := target.NewTargetRegistry()
 		tr.RegisterInitializer(ygotnddtarget.NddTarget_VendorType_nokia_srl, func() target.Target {
 			return srl.New()
 		})
-		// intialize the devicedriver
-		d := targetcontroller.New(
-			cmd.Context(),
-			targetcontroller.WithClient(resource.ClientApplicator{
-				Client:     client,
-				Applicator: resource.NewAPIPatchingApplicator(client),
-			}),
-			targetcontroller.WithLogger(logging.NewLogrLogger(zlog.WithName("target driver"))),
-			//targetcontroller.WithEventCh(eventChs),
-			targetcontroller.WithTargetsRegistry(tr),
-			targetcontroller.WithTargetModel(&model.Model{
+		// inittialize the target controller
+		tc, err := targetcontroller.New(cmd.Context(), ctrl.GetConfigOrDie(), &targetcontroller.Options{
+			Logger:                    logger,
+			Scheme:                    scheme,
+			GrpcBindAddress:           strconv.Itoa(pkgmetav1.GnmiServerPort),
+			ServiceDiscovery:          pkgmetav1.ServiceDiscoveryType(serviceDiscovery),
+			ServiceDiscoveryNamespace: serviceDiscoveryNamespace,
+			ControllerConfigName:      controllerConfigName,
+			TargetRegistry:            tr,
+			TargetModel: &model.Model{
 				StructRootType:  reflect.TypeOf((*ygotsrl.Device)(nil)),
 				SchemaTreeRoot:  ygotsrl.SchemaTree["Device"],
 				JsonUnmarshaler: ygotsrl.Unmarshal,
 				EnumData:        ygotsrl.ΛEnum,
-			}),
-		)
-		if err := d.Start(); err != nil {
-			return errors.Wrap(err, "Cannot start device driver")
+			},
+		})
+		if err != nil {
+			return errors.Wrap(err, "Cannot create target controller")
+		}
+		if err := tc.Start(); err != nil {
+			return errors.Wrap(err, "Cannot start target controller")
 		}
 
 		// +kubebuilder:scaffold:builder
 
-		// TODO Health check
-		for {
+		zlog.Info("create manager")
+		mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+			Scheme:                 scheme,
+			MetricsBindAddress:     metricsAddr,
+			Port:                   7443,
+			HealthProbeBindAddress: probeAddr,
+			LeaderElection:         enableLeaderElection,
+			LeaderElectionID:       "c66ce353.ndd.yndd.io",
+		})
+		if err != nil {
+			return errors.Wrap(err, "Cannot create manager")
 		}
 
-		//return nil
+		// initialize controllers
+		if err = itarget.Setup(mgr, &shared.NddControllerOptions{
+			Logger:    logger,
+			Poll:      pollInterval,
+			Namespace: namespace,
+			Copts: controller.Options{
+				MaxConcurrentReconciles: concurrency,
+				RateLimiter:             ratelimiter.NewDefaultProviderRateLimiter(ratelimiter.DefaultProviderRPS),
+			},
+		}); err != nil {
+			return errors.Wrap(err, "Cannot add target to manager")
+		}
+
+		// +kubebuilder:scaffold:builder
+
+		if err := mgr.AddHealthzCheck("health", healthz.Ping); err != nil {
+			return errors.Wrap(err, "unable to set up health check")
+		}
+		if err := mgr.AddReadyzCheck("check", healthz.Ping); err != nil {
+			return errors.Wrap(err, "unable to set up ready check")
+		}
+
+		zlog.Info("starting manager")
+		if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+			return errors.Wrap(err, "problem running manager")
+		}
+
+		// TODO create channel for creating/deleting targets
+
+		return nil
+
 	},
 }
 
@@ -136,21 +176,7 @@ func init() {
 	startCmd.Flags().StringVarP(&grpcQueryAddress, "grpc-query-address", "", "", "Validation query address.")
 	startCmd.Flags().BoolVarP(&autoPilot, "autopilot", "a", true,
 		"Apply delta/diff changes to the config automatically when set to true, if set to false the provider will report the delta and the operator should intervene what to do with the delta/diffs")
-}
-
-func nddCtlrOptions(c int) controller.Options {
-	return controller.Options{
-		MaxConcurrentReconciles: c,
-		RateLimiter:             ratelimiter.NewDefaultProviderRateLimiter(ratelimiter.DefaultProviderRPS),
-	}
-}
-
-func getClient(scheme *runtime.Scheme) (client.Client, error) {
-	cfg, err := ctrl.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	return client.New(cfg, client.Options{Scheme: scheme})
-
+	startCmd.Flags().StringVarP(&serviceDiscovery, "service-discovery", "", "consul", "the service discovery kind used in this deployment")
+	startCmd.Flags().StringVarP(&serviceDiscoveryNamespace, "service-discovery-namespace", "", "consul", "the namespace for service discovery")
+	startCmd.Flags().StringVarP(&controllerConfigName, "controller-config-name", "", "", "The name of the controller configuration")
 }

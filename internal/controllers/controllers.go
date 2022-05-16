@@ -22,7 +22,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	//"github.com/yndd/ndda-network/internal/controllers/network"
-	"github.com/yndd/ndd-config-srl/internal/controllers/target"
+	//"github.com/yndd/ndd-config-srl/internal/controllers/target"
 	//"github.com/yndd/ndd-config-srl/internal/controllers/srl"
 	"github.com/yndd/ndd-target-runtime/pkg/shared"
 )
@@ -39,12 +39,14 @@ func Setup(mgr ctrl.Manager, option controller.Options, nddcopts *shared.NddCont
 		}
 		eventChans[gvk] = eventChan
 	}
-	for _, setup := range []func(ctrl.Manager, controller.Options, *shared.NddControllerOptions) error{
-		target.Setup,
-	} {
-		if err := setup(mgr, option, nddcopts); err != nil {
-			return nil, err
+	/*
+		for _, setup := range []func(ctrl.Manager, controller.Options, *shared.NddControllerOptions) error{
+			target.Setup,
+		} {
+			if err := setup(mgr, option, nddcopts); err != nil {
+				return nil, err
+			}
 		}
-	}
+	*/
 	return eventChans, nil
 }

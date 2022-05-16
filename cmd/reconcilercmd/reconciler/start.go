@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package provider
+package reconciler
 
 import (
 	"os"
@@ -37,31 +37,37 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	srlv1alpha1 "github.com/yndd/ndd-config-srl/apis/srl/v1alpha1"
-	"github.com/yndd/ndd-config-srl/internal/controllers"
+	"github.com/yndd/ndd-config-srl/internal/controllers/srl"
 	"github.com/yndd/ndd-runtime/pkg/logging"
 	"github.com/yndd/ndd-runtime/pkg/ratelimiter"
 	"github.com/yndd/ndd-target-runtime/pkg/shared"
+	"github.com/yndd/reconciler-controller/pkg/reconcilercontroller"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	//+kubebuilder:scaffold:imports
 )
 
 var (
-	metricsAddr          string
-	probeAddr            string
-	enableLeaderElection bool
-	concurrency          int
-	pollInterval         time.Duration
-	namespace            string
-	podname              string
-	grpcServerAddress    string
-	grpcQueryAddress     string
-	autoPilot            bool
+	metricsAddr               string
+	probeAddr                 string
+	enableLeaderElection      bool
+	concurrency               int
+	pollInterval              time.Duration
+	namespace                 string
+	podname                   string
+	grpcServerAddress         string
+	grpcQueryAddress          string
+	autoPilot                 bool
+	serviceDiscovery          string
+	serviceDiscoveryNamespace string // todo initialization
+	controllerConfigName      string
 )
 
 // startCmd represents the start command for the network device driver
 var startCmd = &cobra.Command{
 	Use:          "start",
-	Short:        "start the srl config provider",
-	Long:         "start the srl config provider",
+	Short:        "start srl config reconciler",
+	Long:         "start srl config reconciler",
 	Aliases:      []string{"start"},
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
@@ -70,12 +76,28 @@ var startCmd = &cobra.Command{
 			// Only use a logr.Logger when debug is on
 			ctrl.SetLogger(zlog)
 		}
+		logger := logging.NewLogrLogger(zlog.WithName("reconciler"))
 
 		if profiler {
 			defer profile.Start().Stop()
 			go func() {
 				http.ListenAndServe(":8000", nil)
 			}()
+		}
+
+		rc, err := reconcilercontroller.New(cmd.Context(), ctrl.GetConfigOrDie(), &reconcilercontroller.Options{
+			Logger:                    logger,
+			Scheme:                    scheme,
+			GrpcBindAddress:           strconv.Itoa(pkgmetav1.GnmiServerPort),
+			ServiceDiscovery:          pkgmetav1.ServiceDiscoveryType(serviceDiscovery),
+			ServiceDiscoveryNamespace: serviceDiscoveryNamespace,
+			ControllerConfigName:      controllerConfigName,
+		})
+		if err != nil {
+			return errors.Wrap(err, "Cannot create reconciler controller")
+		}
+		if err := rc.Start(); err != nil {
+			return errors.Wrap(err, "Cannot start reconciler controller")
 		}
 
 		zlog.Info("create manager")
@@ -91,7 +113,7 @@ var startCmd = &cobra.Command{
 			LeaderElectionID:       "c66ce353.ndd.yndd.io",
 		})
 		if err != nil {
-			return errors.Wrap(err, "Cannot create manager")
+			return errors.Wrap(err, "Cannot add srlconfig manager")
 		}
 
 		// assign gnmi address
@@ -103,15 +125,13 @@ var startCmd = &cobra.Command{
 		}
 		zlog.Info("gnmi address", "address", gnmiAddress)
 
-		nddcopts := &shared.NddControllerOptions{
+		// initialize controllers
+		_, _, err = srl.Setup(mgr, &shared.NddControllerOptions{
 			Logger:      logging.NewLogrLogger(zlog.WithName("srl")),
 			Poll:        pollInterval,
 			Namespace:   namespace,
 			GnmiAddress: gnmiAddress,
-		}
-
-		// initialize controllers
-		_, err = controllers.Setup(mgr, nddCtlrOptions(concurrency), nddcopts)
+		})
 		if err != nil {
 			return errors.Wrap(err, "Cannot add ndd controllers to manager")
 		}
@@ -133,6 +153,9 @@ var startCmd = &cobra.Command{
 		if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 			return errors.Wrap(err, "problem running manager")
 		}
+
+		// TODO setup event channel for config changes
+
 		return nil
 	},
 }
@@ -151,6 +174,9 @@ func init() {
 	startCmd.Flags().StringVarP(&grpcQueryAddress, "grpc-query-address", "", "", "Validation query address.")
 	startCmd.Flags().BoolVarP(&autoPilot, "autopilot", "a", true,
 		"Apply delta/diff changes to the config automatically when set to true, if set to false the provider will report the delta and the operator should intervene what to do with the delta/diffs")
+	startCmd.Flags().StringVarP(&serviceDiscovery, "service-discovery", "", "consul", "the service discovery kind used in this deployment")
+	startCmd.Flags().StringVarP(&serviceDiscoveryNamespace, "service-discovery-namespace", "", "consul", "the namespace for service discovery")
+	startCmd.Flags().StringVarP(&controllerConfigName, "controller-config-name", "", "", "The name of the controller configuration")
 }
 
 func nddCtlrOptions(c int) controller.Options {
@@ -171,4 +197,13 @@ func getGnmiServerAddress(podname string) string {
 		}
 	}
 	return pkgmetav1.PrefixGnmiService + "-" + newName + "." + pkgmetav1.NamespaceLocalK8sDNS + strconv.Itoa((pkgmetav1.GnmiServerPort))
+}
+
+func getClient(scheme *runtime.Scheme) (client.Client, error) {
+	cfg, err := ctrl.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	return client.New(cfg, client.Options{Scheme: scheme})
 }

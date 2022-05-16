@@ -52,7 +52,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
 	cevent "sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
@@ -68,7 +67,7 @@ const (
 )
 
 // SetupDevice adds a controller that reconciles Devices.
-func SetupDevice(mgr ctrl.Manager, o controller.Options, nddcopts *shared.NddControllerOptions) (string, chan cevent.GenericEvent, error) {
+func Setup(mgr ctrl.Manager, nddopts *shared.NddControllerOptions) (string, chan cevent.GenericEvent, error) {
 	//func SetupDevice(mgr ctrl.Manager, o controller.Options, nddcopts *shared.NddControllerOptions) error {
 
 	name := managed.ControllerName(srlv1alpha1.DeviceGroupKind)
@@ -91,9 +90,9 @@ func SetupDevice(mgr ctrl.Manager, o controller.Options, nddcopts *shared.NddCon
 
 	r := managed.NewReconciler(mgr,
 		resource.ManagedKind(srlv1alpha1.DeviceGroupVersionKind),
-		managed.WithPollInterval(nddcopts.Poll),
+		managed.WithPollInterval(nddopts.Poll),
 		managed.WithExternalConnecter(&connectorDevice{
-			log:   nddcopts.Logger,
+			log:   nddopts.Logger,
 			kube:  mgr.GetClient(),
 			usage: resource.NewTargetUsageTracker(mgr.GetClient(), &targetv1.TargetUsage{}),
 			//deviceSchema: nddcopts.DeviceSchema,
@@ -101,27 +100,27 @@ func SetupDevice(mgr ctrl.Manager, o controller.Options, nddcopts *shared.NddCon
 			deviceModel: dm,
 			systemModel: sm,
 			newClientFn: target.NewTarget,
-			gnmiAddress: nddcopts.GnmiAddress},
+			gnmiAddress: nddopts.GnmiAddress},
 		),
 		managed.WithValidator(&validatorDevice{
-			log:         nddcopts.Logger,
+			log:         nddopts.Logger,
 			deviceModel: dm,
 			systemModel: sm,
 		},
 		),
-		managed.WithLogger(nddcopts.Logger.WithValues("Srl3Device", name)),
+		managed.WithLogger(nddopts.Logger.WithValues("Srl3Device", name)),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))))
 
 	DeviceHandler := &EnqueueRequestForAllDevice{
 		client: mgr.GetClient(),
-		log:    nddcopts.Logger,
+		log:    nddopts.Logger,
 		ctx:    context.Background(),
 	}
 
 	//return ctrl.NewControllerManagedBy(mgr).
 	return srlv1alpha1.DeviceGroupKind, events, ctrl.NewControllerManagedBy(mgr).
 		Named(name).
-		WithOptions(o).
+		WithOptions(nddopts.Copts).
 		For(&srlv1alpha1.SrlConfig{}).
 		Owns(&srlv1alpha1.SrlConfig{}).
 		WithEventFilter(resource.IgnoreUpdateWithoutGenerationChangePredicate()).

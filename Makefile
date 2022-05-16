@@ -11,14 +11,11 @@ VERSION ?= latest
 IMAGE_TAG_BASE ?= yndd/ndd-config-srl
 
 # Image URL to use all building/pushing image targets
-IMG ?= $(IMAGE_TAG_BASE)-controller:$(VERSION)
-IMG_PROVIDER ?= $(IMAGE_TAG_BASE)-provider:$(VERSION)
-IMG_CONFIGPROXY ?= $(IMAGE_TAG_BASE)-config-proxy:$(VERSION)
+#IMG ?= $(IMAGE_TAG_BASE)-controller:$(VERSION)
+IMG_RECONCILER ?= $(IMAGE_TAG_BASE)-reconciler:$(VERSION)
+IMG_WORKER ?= $(IMAGE_TAG_BASE)-worker:$(VERSION)
 # Package
 PKG ?= $(IMAGE_TAG_BASE)
-
-# Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
-CRD_OPTIONS ?= "crd:trivialVersions=true,preserveUnknownFields=false"
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -26,6 +23,9 @@ GOBIN=$(shell go env GOPATH)/bin
 else
 GOBIN=$(shell go env GOBIN)
 endif
+
+mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+mkfile_dir := $(dir $(mkfile_path))
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
@@ -54,8 +54,8 @@ help: ## Display this help.
 ##@ Development
 
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	rm -rf package/crds/
-	$(CONTROLLER_GEN) $(CRD_OPTIONS) webhook paths="./..." output:crd:artifacts:config=package/crds
+	rm -rf package/crds/*
+	$(CONTROLLER_GEN) crd webhook paths="./..." output:crd:artifacts:config=package/crds
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 fmt: ## Run go fmt against code.
@@ -73,38 +73,30 @@ test: generate fmt vet ## Run tests.
 ##@ Build
 
 build: generate fmt vet ## Build manager binary.
-    @CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o ./bin/manager cmd/combinedcmd/main.go
+    @CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o ./bin/manager cmd/workercmd/main.go
 
 run: generate fmt vet ## Run a controller from your host.
 	go run ./cmd/main.go
 
 docker-build: test ## Build docker image with the manager.
-	docker build -f DockerfileController -t ${IMG} .
-	docker build -f DockerfileProvider -t ${IMG_PROVIDER} .
-	docker build -f DockerfileConfigProxy -t ${IMG_CONFIGPROXY} .
+	docker build -f DockerfileReconciler -t ${IMG_RECONCILER} .
+	docker build -f DockerfileWorker -t ${IMG_WORKER} .
 
-docker-build-controller: test ## Build docker images.
-	docker build -f DockerfileController -t ${IMG} .
+docker-build-reconciler: test ## Build docker images.
+	docker build -f DockerfileReconciler -t ${IMG_RECONCILER} .
 
-docker-build-provider: test ## Build docker images.
-	docker build -f DockerfileProvider -t ${IMG_PROVIDER} .
-
-docker-build-configproxy: test ## Build docker images.
-	docker build -f DockerfileConfigProxy -t ${IMG_CONFIGPROXY} .
+docker-build-worker: test ## Build docker images.
+	docker build -f DockerfileWorker -t ${IMG_WORKER} .
 
 docker-push: ## Push docker image with the manager.
-	docker push ${IMG}
-	docker push ${IMG_PROVIDER}
-	docker push ${IMG_CONFIGPROXY}
+	docker push ${IMG_RECONCILER}
+	docker push ${IMG_WORKER}
 
-docker-push-controller: ## Push docker images.
-	docker push ${IMG}
+docker-push-reconciler: ## Push docker images.
+	docker push ${IMG_RECONCILER}
 
-docker-push-provider: ## Push docker images.
-	docker push ${IMG_PROVIDER}
-
-docker-push-configproxy: ## Push docker images.
-	docker push ${IMG_CONFIGPROXY}
+docker-push-worker: ## Push docker images.
+	docker push ${IMG_WORKER}
 
 package-build: ## build ndd package.
 	rm -rf package/ndd-*
@@ -113,21 +105,34 @@ package-build: ## build ndd package.
 package-push: ## build ndd package.
 	cd package;kubectl ndd package push ${PKG};cd ..
 
+##@ Build Dependencies
 
-CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
-controller-gen: ## Download controller-gen locally if necessary.
-	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.4.1)
+## Location to install dependencies to
+LOCALBIN ?= $(shell pwd)/bin
+$(LOCALBIN):
+	mkdir -p $(LOCALBIN)
 
-# go-get-tool will 'go get' any package $2 and install it to $1.
-PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
-define go-get-tool
-@[ -f $(1) ] || { \
-set -e ;\
-TMP_DIR=$$(mktemp -d) ;\
-cd $$TMP_DIR ;\
-go mod init tmp ;\
-echo "Downloading $(2)" ;\
-GOBIN=$(PROJECT_DIR)/bin go get $(2) ;\
-rm -rf $$TMP_DIR ;\
-}
-endef
+## Tool Binaries
+KUSTOMIZE ?= $(LOCALBIN)/kustomize
+CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
+ENVTEST ?= $(LOCALBIN)/setup-envtest
+
+## Tool Versions
+KUSTOMIZE_VERSION ?= v3.8.7
+CONTROLLER_TOOLS_VERSION ?= v0.8.0
+
+KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
+.PHONY: kustomize
+kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
+$(KUSTOMIZE): $(LOCALBIN)
+	curl -s $(KUSTOMIZE_INSTALL_SCRIPT) | bash -s -- $(subst v,,$(KUSTOMIZE_VERSION)) $(LOCALBIN)
+
+.PHONY: controller-gen
+controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
+$(CONTROLLER_GEN): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
+
+.PHONY: envtest
+envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
+$(ENVTEST): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest

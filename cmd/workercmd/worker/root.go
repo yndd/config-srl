@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package worker
 
 import (
 	"os"
@@ -25,14 +25,8 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 
-	certv1 "github.com/jetstack/cert-manager/pkg/apis/certmanager/v1"
-	certmetav1 "github.com/jetstack/cert-manager/pkg/apis/meta/v1"
-	srlv1alpha1 "github.com/yndd/ndd-config-srl/apis/srl/v1alpha1"
-	pkgmetav1 "github.com/yndd/ndd-core/apis/pkg/meta/v1"
-	pkgv1 "github.com/yndd/ndd-core/apis/pkg/v1"
+	//srlv1alpha1 "github.com/yndd/ndd-config-srl/apis/srl/v1alpha1"
 	targetv1 "github.com/yndd/ndd-target-runtime/apis/dvr/v1"
-	admissionv1 "k8s.io/api/admissionregistration/v1"
-	extv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -45,7 +39,7 @@ var (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "manager",
-	Short: "ndd srl config controller",
+	Short: "srl config worker",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 	},
 }
@@ -64,13 +58,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&profiler, "profiler", "", false, "enable profiling")
 
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(srlv1alpha1.AddToScheme(scheme))
+	//utilruntime.Must(srlv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(targetv1.AddToScheme(scheme))
-	utilruntime.Must(pkgmetav1.AddToScheme(scheme))
-	utilruntime.Must(pkgv1.AddToScheme(scheme))
-	utilruntime.Must(certv1.AddToScheme(scheme))
-	utilruntime.Must(certmetav1.AddToScheme(scheme))
-	utilruntime.Must(admissionv1.AddToScheme(scheme))
-	utilruntime.Must(extv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }

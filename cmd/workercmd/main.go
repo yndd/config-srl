@@ -16,8 +16,8 @@ limitations under the License.
 
 package main
 
-import "github.com/yndd/ndd-config-srl/cmd/providercmd/provider"
+import "github.com/yndd/ndd-config-srl/cmd/workercmd/worker"
 
 func main() {
-	provider.Execute()
+	worker.Execute()
 }

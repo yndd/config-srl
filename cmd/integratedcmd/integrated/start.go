@@ -39,12 +39,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	srlv1alpha1 "github.com/yndd/ndd-config-srl/apis/srl/v1alpha1"
-	"github.com/yndd/ndd-config-srl/internal/controllers"
+	isrl "github.com/yndd/ndd-config-srl/internal/controllers/srl"
+	itarget "github.com/yndd/ndd-config-srl/internal/controllers/target"
 	"github.com/yndd/ndd-config-srl/internal/target/srl"
 	"github.com/yndd/ndd-config-srl/pkg/ygotsrl"
 	"github.com/yndd/ndd-runtime/pkg/logging"
 	"github.com/yndd/ndd-runtime/pkg/ratelimiter"
-	"github.com/yndd/ndd-target-runtime/pkg/resource"
 	"github.com/yndd/ndd-target-runtime/pkg/shared"
 	"github.com/yndd/ndd-target-runtime/pkg/target"
 	"github.com/yndd/ndd-target-runtime/pkg/targetcontroller"
@@ -53,16 +53,19 @@ import (
 )
 
 var (
-	metricsAddr          string
-	probeAddr            string
-	enableLeaderElection bool
-	concurrency          int
-	pollInterval         time.Duration
-	namespace            string
-	podname              string
-	grpcServerAddress    string
-	grpcQueryAddress     string
-	autoPilot            bool
+	metricsAddr               string
+	probeAddr                 string
+	enableLeaderElection      bool
+	concurrency               int
+	pollInterval              time.Duration
+	namespace                 string
+	podname                   string
+	grpcServerAddress         string
+	grpcQueryAddress          string
+	autoPilot                 bool
+	serviceDiscovery          string
+	serviceDiscoveryNamespace string // todo initialization
+	controllerConfigName      string
 )
 
 // startCmd represents the start command for the network device driver
@@ -78,6 +81,7 @@ var startCmd = &cobra.Command{
 			// Only use a logr.Logger when debug is on
 			ctrl.SetLogger(zlog)
 		}
+		logger := logging.NewLogrLogger(zlog.WithName("integrated"))
 
 		if profiler {
 			defer profile.Start().Stop()
@@ -85,6 +89,36 @@ var startCmd = &cobra.Command{
 				http.ListenAndServe(":8000", nil)
 			}()
 		}
+
+		// initialize the target registry and register the vendor type
+		tr := target.NewTargetRegistry()
+		tr.RegisterInitializer(ygotnddtarget.NddTarget_VendorType_nokia_srl, func() target.Target {
+			return srl.New()
+		})
+		// inittialize the target controller
+		tc, err := targetcontroller.New(cmd.Context(), ctrl.GetConfigOrDie(), &targetcontroller.Options{
+			Logger:                    logger,
+			Scheme:                    scheme,
+			GrpcBindAddress:           strconv.Itoa(pkgmetav1.GnmiServerPort),
+			ServiceDiscovery:          pkgmetav1.ServiceDiscoveryType(serviceDiscovery),
+			ServiceDiscoveryNamespace: serviceDiscoveryNamespace,
+			ControllerConfigName:      controllerConfigName,
+			TargetRegistry:            tr,
+			TargetModel: &model.Model{
+				StructRootType:  reflect.TypeOf((*ygotsrl.Device)(nil)),
+				SchemaTreeRoot:  ygotsrl.SchemaTree["Device"],
+				JsonUnmarshaler: ygotsrl.Unmarshal,
+				EnumData:        ygotsrl.ΛEnum,
+			},
+		})
+		if err != nil {
+			return errors.Wrap(err, "Cannot create target controller")
+		}
+		if err := tc.Start(); err != nil {
+			return errors.Wrap(err, "Cannot start target controller")
+		}
+
+		// no need to run the reconciler controller
 
 		zlog.Info("create manager")
 		mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -112,47 +146,32 @@ var startCmd = &cobra.Command{
 		}
 		zlog.Info("gnmi address", "address", gnmiAddress)
 
-		nddcopts := &shared.NddControllerOptions{
+		// initialize controllers
+		if err = itarget.Setup(mgr, &shared.NddControllerOptions{
+			Logger:    logger,
+			Poll:      pollInterval,
+			Namespace: namespace,
+			Copts: controller.Options{
+				MaxConcurrentReconciles: concurrency,
+				RateLimiter:             ratelimiter.NewDefaultProviderRateLimiter(ratelimiter.DefaultProviderRPS),
+			},
+		}); err != nil {
+			return errors.Wrap(err, "Cannot add target to manager")
+		}
+
+		// initialize controllers
+		_, _, err = isrl.Setup(mgr, &shared.NddControllerOptions{
 			Logger:      logging.NewLogrLogger(zlog.WithName("srl")),
 			Poll:        pollInterval,
 			Namespace:   namespace,
 			GnmiAddress: gnmiAddress,
-		}
-
-		// initialize controllers
-		eventChs, err := controllers.Setup(mgr, nddCtlrOptions(concurrency), nddcopts)
+		})
 		if err != nil {
 			return errors.Wrap(err, "Cannot add ndd controllers to manager")
 		}
 
 		if err = (&srlv1alpha1.SrlConfig{}).SetupWebhookWithManager(mgr); err != nil {
 			return errors.Wrap(err, "unable to create webhook for srl3device")
-		}
-
-		// initialize the target registry and register the vendor type
-		tr := target.NewTargetRegistry()
-		tr.RegisterInitializer(ygotnddtarget.NddTarget_VendorType_nokia_srl, func() target.Target {
-			return srl.New()
-		})
-		// intialize the devicedriver
-		d := targetcontroller.New(
-			cmd.Context(),
-			targetcontroller.WithClient(resource.ClientApplicator{
-				Client:     mgr.GetClient(),
-				Applicator: resource.NewAPIPatchingApplicator(mgr.GetClient()),
-			}),
-			targetcontroller.WithLogger(logging.NewLogrLogger(zlog.WithName("target driver"))),
-			targetcontroller.WithEventCh(eventChs),
-			targetcontroller.WithTargetsRegistry(tr),
-			targetcontroller.WithTargetModel(&model.Model{
-				StructRootType:  reflect.TypeOf((*ygotsrl.Device)(nil)),
-				SchemaTreeRoot:  ygotsrl.SchemaTree["Device"],
-				JsonUnmarshaler: ygotsrl.Unmarshal,
-				EnumData:        ygotsrl.ΛEnum,
-			}),
-		)
-		if err := d.Start(); err != nil {
-			return errors.Wrap(err, "Cannot start device driver")
 		}
 
 		// +kubebuilder:scaffold:builder
