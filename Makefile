@@ -64,16 +64,14 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
-ENVTEST_ASSETS_DIR=$(shell pwd)/testbin
-test: generate fmt vet ## Run tests.
-	mkdir -p ${ENVTEST_ASSETS_DIR}
-	test -f ${ENVTEST_ASSETS_DIR}/setup-envtest.sh || curl -sSLo ${ENVTEST_ASSETS_DIR}/setup-envtest.sh https://raw.githubusercontent.com/kubernetes-sigs/controller-runtime/v0.9.3/hack/setup-envtest.sh
-	source ${ENVTEST_ASSETS_DIR}/setup-envtest.sh; fetch_envtest_tools $(ENVTEST_ASSETS_DIR); setup_envtest_env $(ENVTEST_ASSETS_DIR); go test ./... -coverprofile cover.out
+.PHONY: test
+test: generate fmt vet envtest ## Run tests.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
 
 ##@ Build
 
 build: generate fmt vet ## Build manager binary.
-    @CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o ./bin/manager cmd/workercmd/main.go
+    @CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o $(mkfile_dir)/bin/manager $(mkfile_dir)/cmd/workercmd/main.go
 
 run: generate fmt vet ## Run a controller from your host.
 	go run ./cmd/main.go
