@@ -24,9 +24,6 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
-mkfile_dir := $(dir $(mkfile_path))
-
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
@@ -77,7 +74,7 @@ test: generate fmt vet envtest ## Run tests.
 
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
-    @CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o $(mkfile_dir)/bin/manager $(mkfile_dir)/cmd/workercmd/main.go
+    @CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o ./bin/manager ./cmd/workercmd/main.go
 
 .PHONY: run
 run: generate fmt vet ## Run a controller from your host.
