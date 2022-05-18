@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/profile"
 	"github.com/spf13/cobra"
 	"github.com/yndd/ndd-runtime/pkg/model"
+	"github.com/yndd/registrator/registrator"
 
 	itarget "github.com/yndd/ndd-config-srl/internal/controllers/target"
 	"github.com/yndd/ndd-config-srl/internal/target/srl"
@@ -58,6 +59,7 @@ var (
 	grpcServerAddress         string
 	grpcQueryAddress          string
 	autoPilot                 bool
+	serviceDiscoveryDcName    string
 	serviceDiscovery          string
 	serviceDiscoveryNamespace string // todo initialization
 	controllerConfigName      string
@@ -85,6 +87,18 @@ var startCmd = &cobra.Command{
 			}()
 		}
 
+		// create a service discovery registrator
+		reg, err := registrator.New(cmd.Context(), ctrl.GetConfigOrDie(), &registrator.Options{
+			Logger:                    logger,
+			Scheme:                    scheme,
+			DcName:                    serviceDiscoveryDcName,
+			ServiceDiscovery:          pkgmetav1.ServiceDiscoveryType(serviceDiscovery),
+			ServiceDiscoveryNamespace: serviceDiscoveryNamespace,
+		})
+		if err != nil {
+			return errors.Wrap(err, "Cannot create registrator")
+		}
+
 		// initialize the target registry and register the vendor type
 		tr := target.NewTargetRegistry()
 		tr.RegisterInitializer(ygotnddtarget.NddTarget_VendorType_nokia_srl, func() target.Target {
@@ -92,13 +106,14 @@ var startCmd = &cobra.Command{
 		})
 		// inittialize the target controller
 		tc, err := targetcontroller.New(cmd.Context(), ctrl.GetConfigOrDie(), &targetcontroller.Options{
-			Logger:                    logger,
-			Scheme:                    scheme,
-			GrpcBindAddress:           strconv.Itoa(pkgmetav1.GnmiServerPort),
-			ServiceDiscovery:          pkgmetav1.ServiceDiscoveryType(serviceDiscovery),
-			ServiceDiscoveryNamespace: serviceDiscoveryNamespace,
-			ControllerConfigName:      controllerConfigName,
-			TargetRegistry:            tr,
+			Logger:          logger,
+			//Scheme:          scheme,
+			GrpcBindAddress: strconv.Itoa(pkgmetav1.GnmiServerPort),
+			Registrator:     reg,
+			//ServiceDiscovery:          pkgmetav1.ServiceDiscoveryType(serviceDiscovery),
+			//ServiceDiscoveryNamespace: serviceDiscoveryNamespace,
+			ControllerConfigName: controllerConfigName,
+			TargetRegistry:       tr,
 			TargetModel: &model.Model{
 				StructRootType:  reflect.TypeOf((*ygotsrl.Device)(nil)),
 				SchemaTreeRoot:  ygotsrl.SchemaTree["Device"],
@@ -179,4 +194,5 @@ func init() {
 	startCmd.Flags().StringVarP(&serviceDiscovery, "service-discovery", "", "consul", "the service discovery kind used in this deployment")
 	startCmd.Flags().StringVarP(&serviceDiscoveryNamespace, "service-discovery-namespace", "", "consul", "the namespace for service discovery")
 	startCmd.Flags().StringVarP(&controllerConfigName, "controller-config-name", "", "", "The name of the controller configuration")
+	startCmd.Flags().StringVarP(&serviceDiscoveryDcName, "service-discovery-dc-name", "", "", "The dc name of the controller configuration")
 }

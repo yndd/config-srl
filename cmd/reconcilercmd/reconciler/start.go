@@ -19,7 +19,6 @@ package reconciler
 import (
 	"os"
 	"strconv"
-	"strings"
 	"time"
 
 	"net/http"
@@ -42,8 +41,7 @@ import (
 	"github.com/yndd/ndd-runtime/pkg/ratelimiter"
 	"github.com/yndd/ndd-target-runtime/pkg/shared"
 	"github.com/yndd/reconciler-controller/pkg/reconcilercontroller"
-	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	"github.com/yndd/registrator/registrator"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -60,6 +58,7 @@ var (
 	autoPilot                 bool
 	serviceDiscovery          string
 	serviceDiscoveryNamespace string // todo initialization
+	serviceDiscoveryDcName    string
 	controllerConfigName      string
 )
 
@@ -85,17 +84,29 @@ var startCmd = &cobra.Command{
 			}()
 		}
 
-		rc, err := reconcilercontroller.New(cmd.Context(), ctrl.GetConfigOrDie(), &reconcilercontroller.Options{
+		// create a service discovery registrator
+		reg, err := registrator.New(cmd.Context(), ctrl.GetConfigOrDie(), &registrator.Options{
 			Logger:                    logger,
 			Scheme:                    scheme,
-			GrpcBindAddress:           strconv.Itoa(pkgmetav1.GnmiServerPort),
+			DcName:                    serviceDiscoveryDcName,
 			ServiceDiscovery:          pkgmetav1.ServiceDiscoveryType(serviceDiscovery),
 			ServiceDiscoveryNamespace: serviceDiscoveryNamespace,
-			ControllerConfigName:      controllerConfigName,
+		})
+		if err != nil {
+			return errors.Wrap(err, "Cannot create registrator")
+		}
+
+		// create a reconciler controller
+		rc, err := reconcilercontroller.New(cmd.Context(), ctrl.GetConfigOrDie(), &reconcilercontroller.Options{
+			Logger:               logger,
+			GrpcBindAddress:      strconv.Itoa(pkgmetav1.GnmiServerPort),
+			ControllerConfigName: controllerConfigName,
+			Registrator:          reg,
 		})
 		if err != nil {
 			return errors.Wrap(err, "Cannot create reconciler controller")
 		}
+		// start the reconciler controller
 		if err := rc.Start(); err != nil {
 			return errors.Wrap(err, "Cannot start reconciler controller")
 		}
@@ -116,28 +127,20 @@ var startCmd = &cobra.Command{
 			return errors.Wrap(err, "Cannot add srlconfig manager")
 		}
 
-		// assign gnmi address
-		var gnmiAddress string
-		if grpcQueryAddress != "" {
-			gnmiAddress = grpcQueryAddress
-		} else {
-			gnmiAddress = getGnmiServerAddress(podname)
-		}
-		zlog.Info("gnmi address", "address", gnmiAddress)
-
 		// initialize controllers
 		_, _, err = srl.Setup(mgr, &shared.NddControllerOptions{
 			Logger:      logging.NewLogrLogger(zlog.WithName("srl")),
 			Poll:        pollInterval,
 			Namespace:   namespace,
-			GnmiAddress: gnmiAddress,
+			GnmiAddress: grpcQueryAddress,
+			Registrator: reg,
 		})
 		if err != nil {
 			return errors.Wrap(err, "Cannot add ndd controllers to manager")
 		}
 
 		if err = (&srlv1alpha1.SrlConfig{}).SetupWebhookWithManager(mgr); err != nil {
-			return errors.Wrap(err, "unable to create webhook for srl3device")
+			return errors.Wrap(err, "unable to create webhook for srl config")
 		}
 
 		// +kubebuilder:scaffold:builder
@@ -176,6 +179,7 @@ func init() {
 		"Apply delta/diff changes to the config automatically when set to true, if set to false the provider will report the delta and the operator should intervene what to do with the delta/diffs")
 	startCmd.Flags().StringVarP(&serviceDiscovery, "service-discovery", "", "consul", "the service discovery kind used in this deployment")
 	startCmd.Flags().StringVarP(&serviceDiscoveryNamespace, "service-discovery-namespace", "", "consul", "the namespace for service discovery")
+	startCmd.Flags().StringVarP(&serviceDiscoveryDcName, "service-discovery-dc-name", "", "", "The dc name of the controller configuration")
 	startCmd.Flags().StringVarP(&controllerConfigName, "controller-config-name", "", "", "The name of the controller configuration")
 }
 
@@ -184,26 +188,4 @@ func nddCtlrOptions(c int) controller.Options {
 		MaxConcurrentReconciles: c,
 		RateLimiter:             ratelimiter.NewDefaultProviderRateLimiter(ratelimiter.DefaultProviderRPS),
 	}
-}
-
-func getGnmiServerAddress(podname string) string {
-	//revision := strings.Split(podname, "-")[len(strings.Split(podname, "-"))-3]
-	var newName string
-	for i, s := range strings.Split(podname, "-") {
-		if i == 0 {
-			newName = s
-		} else if i <= (len(strings.Split(podname, "-")) - 3) {
-			newName += "-" + s
-		}
-	}
-	return pkgmetav1.PrefixGnmiService + "-" + newName + "." + pkgmetav1.NamespaceLocalK8sDNS + strconv.Itoa((pkgmetav1.GnmiServerPort))
-}
-
-func getClient(scheme *runtime.Scheme) (client.Client, error) {
-	cfg, err := ctrl.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	return client.New(cfg, client.Options{Scheme: scheme})
 }

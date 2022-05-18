@@ -19,7 +19,10 @@ package srl
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"os"
 	"reflect"
+	"strconv"
 
 	//"strings"
 	"time"
@@ -46,6 +49,7 @@ import (
 	"github.com/yndd/ndd-yang/pkg/yparser"
 	"github.com/yndd/nddp-system/pkg/gvkresource"
 	"github.com/yndd/nddp-system/pkg/ygotnddp"
+	"github.com/yndd/registrator/registrator"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
@@ -91,17 +95,16 @@ func Setup(mgr ctrl.Manager, nddopts *shared.NddControllerOptions) (string, chan
 	r := managed.NewReconciler(mgr,
 		resource.ManagedKind(srlv1alpha1.DeviceGroupVersionKind),
 		managed.WithPollInterval(nddopts.Poll),
-		managed.WithExternalConnecter(&connectorDevice{
-			log:   nddopts.Logger,
-			kube:  mgr.GetClient(),
-			usage: resource.NewTargetUsageTracker(mgr.GetClient(), &targetv1.TargetUsage{}),
-			//deviceSchema: nddcopts.DeviceSchema,
-			//nddpSchema:   nddcopts.NddpSchema,
+		managed.WithExternalConnecter(&connector{
+			log:         nddopts.Logger,
+			kube:        mgr.GetClient(),
+			usage:       resource.NewTargetUsageTracker(mgr.GetClient(), &targetv1.TargetUsage{}),
 			deviceModel: dm,
 			systemModel: sm,
 			newClientFn: target.NewTarget,
-			gnmiAddress: nddopts.GnmiAddress},
-		),
+			gnmiAddress: nddopts.GnmiAddress,
+			registrator: nddopts.Registrator,
+		}),
 		managed.WithValidator(&validatorDevice{
 			log:         nddopts.Logger,
 			deviceModel: dm,
@@ -397,7 +400,7 @@ func (v *validatorDevice) GetRootPaths(ctx context.Context, mg resource.Managed)
 
 // A connector is expected to produce an ExternalClient when its Connect method
 // is called.
-type connectorDevice struct {
+type connector struct {
 	log         logging.Logger
 	kube        client.Client
 	usage       resource.Tracker
@@ -405,13 +408,14 @@ type connectorDevice struct {
 	systemModel *model.Model
 	newClientFn func(c *gnmitypes.TargetConfig) *target.Target
 	gnmiAddress string
+	registrator registrator.Registrator
 }
 
 // Connect produces an ExternalClient by:
 // 1. Tracking that the managed resource is using a Target.
 // 2. Getting the managed resource's Target with connection details
 // A resource is mapped to a single target
-func (c *connectorDevice) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
+func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
 	log := c.log.WithValues("resource", mg.GetName())
 	//log.Debug("Connect")
 
@@ -433,9 +437,20 @@ func (c *connectorDevice) Connect(ctx context.Context, mg resource.Managed) (man
 		return nil, errors.New(targetNotConfigured)
 	}
 
+	svcs, err := c.registrator.Query(ctx, os.Getenv("SERVICE_NAME"), []string{fmt.Sprintf("target=%s", types.NamespacedName{
+		Namespace: t.GetNamespace(),
+		Name:      t.GetName(),
+	}.String())})
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot get query from registrator")
+	}
+	if len(svcs) == 0 {
+		return nil, errors.New("target not available")
+	}
+
 	cfg := &gnmitypes.TargetConfig{
 		Name:       cr.GetTargetReference().Name,
-		Address:    c.gnmiAddress,
+		Address:    fmt.Sprintf("%s:%s", svcs[0].Address, strconv.Itoa(svcs[0].Port)),
 		Username:   utils.StringPtr("admin"),
 		Password:   utils.StringPtr("admin"),
 		Timeout:    10 * time.Second,
