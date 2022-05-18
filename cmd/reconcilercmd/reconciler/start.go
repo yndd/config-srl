@@ -97,10 +97,9 @@ var startCmd = &cobra.Command{
 
 		// create a reconciler controller
 		rc, err := reconcilercontroller.New(cmd.Context(), ctrl.GetConfigOrDie(), &reconcilercontroller.Options{
-			Logger:               logger,
-			GrpcBindAddress:      strconv.Itoa(pkgmetav1.GnmiServerPort),
-			ControllerConfigName: controllerConfigName,
-			Registrator:          reg,
+			Logger:          logger,
+			GrpcBindAddress: strconv.Itoa(pkgmetav1.GnmiServerPort),
+			Registrator:     reg,
 		})
 		if err != nil {
 			return errors.Wrap(err, "Cannot create reconciler controller")
@@ -179,7 +178,6 @@ func init() {
 	startCmd.Flags().StringVarP(&serviceDiscovery, "service-discovery", "", "consul", "the service discovery kind used in this deployment")
 	startCmd.Flags().StringVarP(&serviceDiscoveryNamespace, "service-discovery-namespace", "", "consul", "the namespace for service discovery")
 	startCmd.Flags().StringVarP(&serviceDiscoveryDcName, "service-discovery-dc-name", "", "", "The dc name of the controller configuration")
-	startCmd.Flags().StringVarP(&controllerConfigName, "controller-config-name", "", "", "The name of the controller configuration")
 }
 
 func nddCtlrOptions(c int) controller.Options {
