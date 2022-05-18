@@ -107,13 +107,13 @@ docker-push-worker: ## Push docker images.
 	docker push ${IMG_WORKER}
 
 .PHONY: package-build
-package-build: ## build ndd package.
+package-build: kubectl-ndd ## build ndd package.
 	rm -rf package/ndd-*
-	cd package;kubectl ndd package build -t provider;cd ..
+	cd package;PATH=$$PATH:$(LOCALBIN) kubectl ndd package build -t provider;cd ..
 
 .PHONY: package-push
-package-push: ## build ndd package.
-	cd package;kubectl ndd package push ${PKG};cd ..
+package-push: kubectl-ndd ## build ndd package.
+	cd package;PATH=$$PATH:$(LOCALBIN) kubectl ndd package push ${PKG};cd ..
 
 ##@ Build Dependencies
 
@@ -126,10 +126,12 @@ $(LOCALBIN):
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
+KUBECTL_NDD ?= $(LOCALBIN)/kubectl-ndd
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v3.8.7
 CONTROLLER_TOOLS_VERSION ?= v0.8.0
+KUBECTL_NDD_VERSION ?= v0.2.18
 
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
 .PHONY: kustomize
@@ -146,3 +148,8 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
+
+.PHONY: kubectl-ndd
+kubectl-ndd: $(KUBECTL_NDD) ## Download kubectl-ndd locally if necessary.
+$(KUBECTL_NDD): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install github.com/yndd/ndd-core/cmd/kubectl-ndd@$(KUBECTL_NDD_VERSION)  ;\
