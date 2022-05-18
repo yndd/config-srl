@@ -126,11 +126,12 @@ $(LOCALBIN):
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
-KUBECTL-NDD ?= $(LOCALBIN)/kubectl-ndd
+KUBECTL_NDD ?= $(LOCALBIN)/kubectl-ndd
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v3.8.7
 CONTROLLER_TOOLS_VERSION ?= v0.8.0
+KUBECTL_NDD_VERSION ?= v0.2.17
 
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
 .PHONY: kustomize
@@ -149,6 +150,6 @@ $(ENVTEST): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 
 .PHONY: kubectl-ndd
-kubectl-ndd: $(KUBECTL-NDD) ## Download kubectl-ndd locally if necessary.
-$(KUBECTL-NDD): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install github.com/yndd/ndd-core/cmd/kubectl-ndd  ;\
+kubectl-ndd: $(KUBECTL_NDD) ## Download kubectl-ndd locally if necessary.
+$(KUBECTL_NDD): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install github.com/yndd/ndd-core/cmd/cli  ;\
