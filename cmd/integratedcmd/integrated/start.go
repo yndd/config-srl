@@ -93,7 +93,7 @@ var startCmd = &cobra.Command{
 
 		// assign gnmi address
 		gnmiWorkerAddress := grpcQueryAddress
-		if gnmiWorkerAddress != "" {		
+		if gnmiWorkerAddress != "" {
 			gnmiWorkerAddress = strings.Join([]string{"127.0.0.1", strconv.Itoa(pkgmetav1.GnmiServerPort)}, ":")
 		}
 		zlog.Info("gnmi address", "address", gnmiWorkerAddress)
@@ -115,11 +115,11 @@ var startCmd = &cobra.Command{
 		})
 		// inittialize the target controller
 		tc, err := targetcontroller.New(cmd.Context(), ctrl.GetConfigOrDie(), &targetcontroller.Options{
-			Logger:               logger,
-			GrpcBindAddress:      strconv.Itoa(pkgmetav1.GnmiServerPort),
-			Registrator:          reg,
+			Logger:          logger,
+			GrpcBindAddress: strconv.Itoa(pkgmetav1.GnmiServerPort),
+			Registrator:     reg,
 			//ControllerConfigName: controllerConfigName,
-			TargetRegistry:       tr,
+			TargetRegistry: tr,
 			TargetModel: &model.Model{
 				StructRootType:  reflect.TypeOf((*ygotsrl.Device)(nil)),
 				SchemaTreeRoot:  ygotsrl.SchemaTree["Device"],
@@ -167,9 +167,9 @@ var startCmd = &cobra.Command{
 
 		// initialize controllers
 		_, _, err = isrl.Setup(mgr, &shared.NddControllerOptions{
-			Logger:      logging.NewLogrLogger(zlog.WithName("srl")),
-			Poll:        pollInterval,
-			Namespace:   namespace,
+			Logger:    logging.NewLogrLogger(zlog.WithName("srl")),
+			Poll:      pollInterval,
+			Namespace: namespace,
 		})
 		if err != nil {
 			return errors.Wrap(err, "Cannot add ndd controllers to manager")
