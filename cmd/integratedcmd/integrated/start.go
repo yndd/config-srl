@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/profile"
 	"github.com/spf13/cobra"
 	"github.com/yndd/ndd-runtime/pkg/model"
+	"github.com/yndd/registrator/registrator"
 
 	pkgmetav1 "github.com/yndd/ndd-core/apis/pkg/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -90,6 +91,23 @@ var startCmd = &cobra.Command{
 			}()
 		}
 
+		// assign gnmi address
+		gnmiWorkerAddress := grpcQueryAddress
+		if gnmiWorkerAddress != "" {		
+			gnmiWorkerAddress = strings.Join([]string{"127.0.0.1", strconv.Itoa(pkgmetav1.GnmiServerPort)}, ":")
+		}
+		zlog.Info("gnmi address", "address", gnmiWorkerAddress)
+
+		// create a service discovery registrator
+		reg, err := registrator.New(cmd.Context(), ctrl.GetConfigOrDie(), &registrator.Options{
+			Logger:  logger,
+			Scheme:  scheme,
+			Address: gnmiWorkerAddress,
+		})
+		if err != nil {
+			return errors.Wrap(err, "Cannot create registrator")
+		}
+
 		// initialize the target registry and register the vendor type
 		tr := target.NewTargetRegistry()
 		tr.RegisterInitializer(ygotnddtarget.NddTarget_VendorType_nokia_srl, func() target.Target {
@@ -97,13 +115,11 @@ var startCmd = &cobra.Command{
 		})
 		// inittialize the target controller
 		tc, err := targetcontroller.New(cmd.Context(), ctrl.GetConfigOrDie(), &targetcontroller.Options{
-			Logger:                    logger,
-			Scheme:                    scheme,
-			GrpcBindAddress:           strconv.Itoa(pkgmetav1.GnmiServerPort),
-			ServiceDiscovery:          pkgmetav1.ServiceDiscoveryType(serviceDiscovery),
-			ServiceDiscoveryNamespace: serviceDiscoveryNamespace,
-			ControllerConfigName:      controllerConfigName,
-			TargetRegistry:            tr,
+			Logger:               logger,
+			GrpcBindAddress:      strconv.Itoa(pkgmetav1.GnmiServerPort),
+			Registrator:          reg,
+			//ControllerConfigName: controllerConfigName,
+			TargetRegistry:       tr,
 			TargetModel: &model.Model{
 				StructRootType:  reflect.TypeOf((*ygotsrl.Device)(nil)),
 				SchemaTreeRoot:  ygotsrl.SchemaTree["Device"],
@@ -136,16 +152,6 @@ var startCmd = &cobra.Command{
 			return errors.Wrap(err, "Cannot create manager")
 		}
 
-		// assign gnmi address
-		var gnmiAddress string
-		if grpcQueryAddress != "" {
-			gnmiAddress = grpcQueryAddress
-		} else {
-			gnmiAddress = strings.Join([]string{"127.0.0.1", strconv.Itoa(pkgmetav1.GnmiServerPort)}, ":")
-			//gnmiAddress = getGnmiServerAddress(podname)
-		}
-		zlog.Info("gnmi address", "address", gnmiAddress)
-
 		// initialize controllers
 		if err = itarget.Setup(mgr, &shared.NddControllerOptions{
 			Logger:    logger,
@@ -164,7 +170,6 @@ var startCmd = &cobra.Command{
 			Logger:      logging.NewLogrLogger(zlog.WithName("srl")),
 			Poll:        pollInterval,
 			Namespace:   namespace,
-			GnmiAddress: gnmiAddress,
 		})
 		if err != nil {
 			return errors.Wrap(err, "Cannot add ndd controllers to manager")

@@ -19,10 +19,8 @@ package srl
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"reflect"
-	"strconv"
 
 	//"strings"
 	"time"
@@ -35,6 +33,7 @@ import (
 	"github.com/pkg/errors"
 	srlv1alpha1 "github.com/yndd/ndd-config-srl/apis/srl/v1alpha1"
 	"github.com/yndd/ndd-config-srl/pkg/ygotsrl"
+	pkgmetav1 "github.com/yndd/ndd-core/apis/pkg/meta/v1"
 	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 	"github.com/yndd/ndd-runtime/pkg/event"
 	"github.com/yndd/ndd-runtime/pkg/logging"
@@ -102,7 +101,7 @@ func Setup(mgr ctrl.Manager, nddopts *shared.NddControllerOptions) (string, chan
 			deviceModel: dm,
 			systemModel: sm,
 			newClientFn: target.NewTarget,
-			gnmiAddress: nddopts.GnmiAddress,
+			//gnmiAddress: nddopts.GnmiAddress,
 			registrator: nddopts.Registrator,
 		}),
 		managed.WithValidator(&validatorDevice{
@@ -407,7 +406,7 @@ type connector struct {
 	deviceModel *model.Model
 	systemModel *model.Model
 	newClientFn func(c *gnmitypes.TargetConfig) *target.Target
-	gnmiAddress string
+	//gnmiAddress string
 	registrator registrator.Registrator
 }
 
@@ -437,29 +436,26 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 		return nil, errors.New(targetNotConfigured)
 	}
 
-	svcs, err := c.registrator.Query(ctx, os.Getenv("SERVICE_NAME"), []string{fmt.Sprintf("target=%s", types.NamespacedName{
-		Namespace: t.GetNamespace(),
-		Name:      t.GetName(),
-	}.String())})
+	address, err := c.registrator.GetEndpointAddress(ctx,
+		os.Getenv("SERVICE_NAME"),
+		pkgmetav1.GetTargetTag(t.GetNamespace(), t.GetName()))
+
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot get query from registrator")
 	}
-	if len(svcs) == 0 {
-		return nil, errors.New("target not available")
-	}
 
 	cfg := &gnmitypes.TargetConfig{
-		Name:       cr.GetTargetReference().Name,
-		Address:    fmt.Sprintf("%s:%s", svcs[0].Address, strconv.Itoa(svcs[0].Port)),
-		Username:   utils.StringPtr("admin"),
-		Password:   utils.StringPtr("admin"),
+		Name:    cr.GetTargetReference().Name,
+		Address: address,
+		//Username:   utils.StringPtr("admin"),
+		//Password:   utils.StringPtr("admin"),
 		Timeout:    10 * time.Second,
 		SkipVerify: utils.BoolPtr(true),
-		Insecure:   utils.BoolPtr(true),
-		TLSCA:      utils.StringPtr(""), //TODO TLS
-		TLSCert:    utils.StringPtr(""), //TODO TLS
-		TLSKey:     utils.StringPtr(""),
-		Gzip:       utils.BoolPtr(false),
+		//Insecure:   utils.BoolPtr(true),
+		TLSCA:   utils.StringPtr(""), //TODO TLS
+		TLSCert: utils.StringPtr(""), //TODO TLS
+		TLSKey:  utils.StringPtr(""),
+		Gzip:    utils.BoolPtr(false),
 	}
 
 	cl := target.NewTarget(cfg)

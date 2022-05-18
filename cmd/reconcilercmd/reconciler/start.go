@@ -59,7 +59,6 @@ var (
 	serviceDiscovery          string
 	serviceDiscoveryNamespace string // todo initialization
 	serviceDiscoveryDcName    string
-	controllerConfigName      string
 )
 
 // startCmd represents the start command for the network device driver
@@ -88,7 +87,7 @@ var startCmd = &cobra.Command{
 		reg, err := registrator.New(cmd.Context(), ctrl.GetConfigOrDie(), &registrator.Options{
 			Logger:                    logger,
 			Scheme:                    scheme,
-			DcName:                    serviceDiscoveryDcName,
+			ServiceDiscoveryDcName:    serviceDiscoveryDcName,
 			ServiceDiscovery:          pkgmetav1.ServiceDiscoveryType(serviceDiscovery),
 			ServiceDiscoveryNamespace: serviceDiscoveryNamespace,
 		})

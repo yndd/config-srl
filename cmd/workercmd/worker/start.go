@@ -62,7 +62,6 @@ var (
 	serviceDiscoveryDcName    string
 	serviceDiscovery          string
 	serviceDiscoveryNamespace string // todo initialization
-	controllerConfigName      string
 )
 
 // startCmd represents the start command for the network device driver
@@ -91,7 +90,7 @@ var startCmd = &cobra.Command{
 		reg, err := registrator.New(cmd.Context(), ctrl.GetConfigOrDie(), &registrator.Options{
 			Logger:                    logger,
 			Scheme:                    scheme,
-			DcName:                    serviceDiscoveryDcName,
+			ServiceDiscoveryDcName:    serviceDiscoveryDcName,
 			ServiceDiscovery:          pkgmetav1.ServiceDiscoveryType(serviceDiscovery),
 			ServiceDiscoveryNamespace: serviceDiscoveryNamespace,
 		})
@@ -106,13 +105,9 @@ var startCmd = &cobra.Command{
 		})
 		// inittialize the target controller
 		tc, err := targetcontroller.New(cmd.Context(), ctrl.GetConfigOrDie(), &targetcontroller.Options{
-			Logger:          logger,
-			//Scheme:          scheme,
-			GrpcBindAddress: strconv.Itoa(pkgmetav1.GnmiServerPort),
-			Registrator:     reg,
-			//ServiceDiscovery:          pkgmetav1.ServiceDiscoveryType(serviceDiscovery),
-			//ServiceDiscoveryNamespace: serviceDiscoveryNamespace,
-			ControllerConfigName: controllerConfigName,
+			Logger:               logger,
+			GrpcBindAddress:      strconv.Itoa(pkgmetav1.GnmiServerPort),
+			Registrator:          reg,
 			TargetRegistry:       tr,
 			TargetModel: &model.Model{
 				StructRootType:  reflect.TypeOf((*ygotsrl.Device)(nil)),
@@ -193,6 +188,5 @@ func init() {
 		"Apply delta/diff changes to the config automatically when set to true, if set to false the provider will report the delta and the operator should intervene what to do with the delta/diffs")
 	startCmd.Flags().StringVarP(&serviceDiscovery, "service-discovery", "", "consul", "the service discovery kind used in this deployment")
 	startCmd.Flags().StringVarP(&serviceDiscoveryNamespace, "service-discovery-namespace", "", "consul", "the namespace for service discovery")
-	startCmd.Flags().StringVarP(&controllerConfigName, "controller-config-name", "", "", "The name of the controller configuration")
 	startCmd.Flags().StringVarP(&serviceDiscoveryDcName, "service-discovery-dc-name", "", "", "The dc name of the controller configuration")
 }
