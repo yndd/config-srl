@@ -108,7 +108,7 @@ docker-push-worker: ## Push docker images.
 
 .PHONY: package-build
 package-build: kubectl-ndd ## build ndd package.
-	rm -rf package/ndd-*
+	rm -rf package/*.nddpkg
 	cd package;PATH=$$PATH:$(LOCALBIN) kubectl ndd package build -t provider;cd ..
 
 .PHONY: package-push
