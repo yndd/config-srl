@@ -97,9 +97,9 @@ var startCmd = &cobra.Command{
 
 		// create a reconciler controller
 		rc, err := reconcilercontroller.New(cmd.Context(), ctrl.GetConfigOrDie(), &reconcilercontroller.Options{
-			Logger:          logger,
-			GrpcBindAddress: strconv.Itoa(pkgmetav1.GnmiServerPort),
-			Registrator:     reg,
+			Logger:            logger,
+			GrpcServerAddress: ":" + strconv.Itoa(pkgmetav1.GnmiServerPort),
+			Registrator:       reg,
 		})
 		if err != nil {
 			return errors.Wrap(err, "Cannot create reconciler controller")

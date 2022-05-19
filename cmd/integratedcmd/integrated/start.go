@@ -62,7 +62,7 @@ var (
 	namespace                 string
 	podname                   string
 	grpcServerAddress         string
-	grpcQueryAddress          string
+	grpcWorkerAddress         string
 	autoPilot                 bool
 	serviceDiscovery          string
 	serviceDiscoveryNamespace string // todo initialization
@@ -91,18 +91,9 @@ var startCmd = &cobra.Command{
 			}()
 		}
 
-		// assign gnmi address
-		gnmiWorkerAddress := grpcQueryAddress
-		if gnmiWorkerAddress != "" {
-			gnmiWorkerAddress = strings.Join([]string{"127.0.0.1", strconv.Itoa(pkgmetav1.GnmiServerPort)}, ":")
-		}
-		zlog.Info("gnmi address", "address", gnmiWorkerAddress)
-
 		// create a service discovery registrator
 		reg, err := registrator.New(cmd.Context(), ctrl.GetConfigOrDie(), &registrator.Options{
-			Logger:  logger,
-			Scheme:  scheme,
-			Address: gnmiWorkerAddress,
+			Address: grpcWorkerAddress,
 		})
 		if err != nil {
 			return errors.Wrap(err, "Cannot create registrator")
@@ -115,11 +106,10 @@ var startCmd = &cobra.Command{
 		})
 		// inittialize the target controller
 		tc, err := targetcontroller.New(cmd.Context(), ctrl.GetConfigOrDie(), &targetcontroller.Options{
-			Logger:          logger,
-			GrpcBindAddress: strconv.Itoa(pkgmetav1.GnmiServerPort),
-			Registrator:     reg,
-			//ControllerConfigName: controllerConfigName,
-			TargetRegistry: tr,
+			Logger:            logger,
+			GrpcServerAddress: ":" + strconv.Itoa(pkgmetav1.GnmiServerPort),
+			Registrator:       reg,
+			TargetRegistry:    tr,
 			TargetModel: &model.Model{
 				StructRootType:  reflect.TypeOf((*ygotsrl.Device)(nil)),
 				SchemaTreeRoot:  ygotsrl.SchemaTree["Device"],
@@ -207,7 +197,7 @@ func init() {
 	startCmd.Flags().StringVarP(&namespace, "namespace", "n", os.Getenv("POD_NAMESPACE"), "Namespace used to unpack and run packages.")
 	startCmd.Flags().StringVarP(&podname, "podname", "", os.Getenv("POD_NAME"), "Name from the pod")
 	startCmd.Flags().StringVarP(&grpcServerAddress, "grpc-server-address", "s", "", "The address of the grpc server binds to.")
-	startCmd.Flags().StringVarP(&grpcQueryAddress, "grpc-query-address", "", "", "Validation query address.")
+	startCmd.Flags().StringVarP(&grpcWorkerAddress, "grpc-worker-address", "", strings.Join([]string{"127.0.0.1", strconv.Itoa(pkgmetav1.GnmiServerPort)}, ":"), "grpc worker address.")
 	startCmd.Flags().BoolVarP(&autoPilot, "autopilot", "a", true,
 		"Apply delta/diff changes to the config automatically when set to true, if set to false the provider will report the delta and the operator should intervene what to do with the delta/diffs")
 }

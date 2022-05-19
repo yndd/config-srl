@@ -12,11 +12,11 @@ require (
 	github.com/spf13/cobra v1.4.0
 	github.com/yndd/ndd-core v0.2.20
 	github.com/yndd/ndd-runtime v0.5.8
-	github.com/yndd/ndd-target-runtime v0.0.45
+	github.com/yndd/ndd-target-runtime v0.0.46
 	github.com/yndd/ndd-yang v0.2.8
 	github.com/yndd/nddo-runtime v0.0.76
 	github.com/yndd/nddp-system v0.2.4
-	github.com/yndd/reconciler-controller v0.0.7
+	github.com/yndd/reconciler-controller v0.0.8
 	github.com/yndd/registrator v0.0.14
 	google.golang.org/grpc v1.44.0
 	k8s.io/api v0.24.0

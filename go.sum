@@ -1740,8 +1740,8 @@ github.com/yndd/ndd-runtime v0.3.0/go.mod h1:vBCpUsDUymCEaYOKOmI0tbpggC9eiU8xlir
 github.com/yndd/ndd-runtime v0.5.8 h1:G9CHgng4gBui6xnVfwefhqPpDik9TfOKXBKEc46BBTw=
 github.com/yndd/ndd-runtime v0.5.8/go.mod h1:J9Lqkfh+oCtRBkVYdPPwnIaOnv9CC30tJ6WTyYEcr0Q=
 github.com/yndd/ndd-target-runtime v0.0.38/go.mod h1:y5QxpnZKpaisWzW1rAgFpIWhkhy+suJ35yUN0GMgp9U=
-github.com/yndd/ndd-target-runtime v0.0.45 h1:d07vzkXwnFWLGOV+W3xOF5IHiA1T9WrxaV30EkAgYA8=
-github.com/yndd/ndd-target-runtime v0.0.45/go.mod h1:tQyXJylesUuVuXEnaUC8qVlrkENBr7RElldxzqpefmI=
+github.com/yndd/ndd-target-runtime v0.0.46 h1:DNWfefIf1NUaGkIyJVJP3+a7w5TH+LOkZ4G1bKWsXGE=
+github.com/yndd/ndd-target-runtime v0.0.46/go.mod h1:tQyXJylesUuVuXEnaUC8qVlrkENBr7RElldxzqpefmI=
 github.com/yndd/ndd-yang v0.1.62/go.mod h1:GT/8efIchBH1sQ6J64AM1FZDXXIaWeirkYUpbmDPlHI=
 github.com/yndd/ndd-yang v0.1.276/go.mod h1:vcKhP5OU3oJHSEILaE0HEgZKxftcu2GFOGdS6w0TauM=
 github.com/yndd/ndd-yang v0.1.448/go.mod h1:rIFXnOALLTloxMQtqGmTq32q6V9iTVHySE4ELup7hes=
@@ -1778,8 +1778,8 @@ github.com/yndd/nddr-ni-registry v0.0.6/go.mod h1:ifDc1cw6eOs7RxhERplphnBsaL+Tp2
 github.com/yndd/nddr-org-registry v0.0.8/go.mod h1:9nxnVFULAAtRKROBKci+acyPuFjWNMpEegIophMGdqo=
 github.com/yndd/nddr-org-registry v0.0.11/go.mod h1:5cVl1Cv1UczM72EXKJmjIzrJAQH7qmYpqkzO6dupI5g=
 github.com/yndd/nddr-topo-registry v0.0.4/go.mod h1:f5/qMkWQa7namvEgYrNZisgvhcee4bgnFCt30NWOcf8=
-github.com/yndd/reconciler-controller v0.0.7 h1:uTZlzEJGuKX8YlvkL3SkVGujK4HJSnM1plwT3xQyqMg=
-github.com/yndd/reconciler-controller v0.0.7/go.mod h1:77XvKiHdikz2yAm0UriMnlAK2r6QGXMcfAgO5k8ALIM=
+github.com/yndd/reconciler-controller v0.0.8 h1:LKfOzl7y7YPOzf3SEQQlYuXfwVKoxe0bGj/ehL8YQBI=
+github.com/yndd/reconciler-controller v0.0.8/go.mod h1:/4gcMm6c8fMH5pFcmYp14MaqFyT0bFiWNx0D9HNzgm4=
 github.com/yndd/registrator v0.0.11/go.mod h1:ISfvq9KVXmV9o0C4Q6MG1UG47wKdzxqRo9+FTWJLGOo=
 github.com/yndd/registrator v0.0.12/go.mod h1:ISfvq9KVXmV9o0C4Q6MG1UG47wKdzxqRo9+FTWJLGOo=
 github.com/yndd/registrator v0.0.14 h1:l/PtGayIMZNgKMBhGlLyVQe4ax1rbOjUHoTVp0pN1EQ=
