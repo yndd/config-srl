@@ -107,8 +107,8 @@ var startCmd = &cobra.Command{
 		// inittialize the target controller
 		tc, err := targetcontroller.New(cmd.Context(), ctrl.GetConfigOrDie(), &targetcontroller.Options{
 			Logger:            logger,
-			GrpcServerAddress: ":" + strconv.Itoa(pkgmetav1.GnmiServerPort),
 			Registrator:       reg,
+			GrpcServerAddress: ":" + strconv.Itoa(pkgmetav1.GnmiServerPort),
 			TargetRegistry:    tr,
 			TargetModel: &model.Model{
 				StructRootType:  reflect.TypeOf((*ygotsrl.Device)(nil)),
