@@ -10,14 +10,14 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/profile v1.6.0
 	github.com/spf13/cobra v1.4.0
-	github.com/yndd/ndd-core v0.2.20
+	github.com/yndd/ndd-core v0.2.21-0.20220522110645-f0267f153e7e
 	github.com/yndd/ndd-runtime v0.5.8
-	github.com/yndd/ndd-target-runtime v0.0.46
+	github.com/yndd/ndd-target-runtime v0.0.51
 	github.com/yndd/ndd-yang v0.2.8
 	github.com/yndd/nddo-runtime v0.0.76
 	github.com/yndd/nddp-system v0.2.4
-	github.com/yndd/reconciler-controller v0.0.8
-	github.com/yndd/registrator v0.0.14
+	github.com/yndd/reconciler-controller v0.0.13
+	github.com/yndd/registrator v0.0.19
 	google.golang.org/grpc v1.44.0
 	k8s.io/api v0.24.0
 	k8s.io/apimachinery v0.24.0
@@ -114,6 +114,7 @@ require (
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
+	github.com/miekg/dns v1.1.47 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

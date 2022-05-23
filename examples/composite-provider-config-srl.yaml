@@ -1,0 +1,16 @@
+apiVersion: pkg.ndd.yndd.io/v1
+kind: CompositeProvider
+metadata:
+  name: config-srl
+  namespace: ndd-system
+spec:
+  vendorType: nokia-srl
+  packages:
+  - name: reconciler
+    kind: reconciler
+    package: yndd/config-srl-reconciler:latest
+    packagePullPolicy: Always
+  - name: worker
+    kind: worker
+    package: yndd/config-srl-worker:latest
+    packagePullPolicy: Always

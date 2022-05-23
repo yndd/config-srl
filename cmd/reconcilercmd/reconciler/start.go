@@ -173,11 +173,9 @@ func init() {
 	startCmd.Flags().StringVarP(&podname, "podname", "", os.Getenv("POD_NAME"), "Name from the pod")
 	startCmd.Flags().StringVarP(&grpcServerAddress, "grpc-server-address", "s", "", "The address of the grpc server binds to.")
 	startCmd.Flags().StringVarP(&grpcQueryAddress, "grpc-query-address", "", "", "Validation query address.")
-	startCmd.Flags().BoolVarP(&autoPilot, "autopilot", "a", true,
-		"Apply delta/diff changes to the config automatically when set to true, if set to false the provider will report the delta and the operator should intervene what to do with the delta/diffs")
-	startCmd.Flags().StringVarP(&serviceDiscovery, "service-discovery", "", "consul", "the service discovery kind used in this deployment")
-	startCmd.Flags().StringVarP(&serviceDiscoveryNamespace, "service-discovery-namespace", "", "consul", "the namespace for service discovery")
-	startCmd.Flags().StringVarP(&serviceDiscoveryDcName, "service-discovery-dc-name", "", "", "The dc name of the controller configuration")
+	startCmd.Flags().StringVarP(&serviceDiscovery, "service-discovery", "", os.Getenv("SERVICE_DISCOVERY"), "the service discovery kind used in this deployment")
+	startCmd.Flags().StringVarP(&serviceDiscoveryNamespace, "service-discovery-namespace", "", os.Getenv("SERVICE_DISCOVERY_NAMESPACE"), "the namespace used for service discovery")
+	startCmd.Flags().StringVarP(&serviceDiscoveryDcName, "service-discovery-dc-name", "", os.Getenv("SERVICE_DISCOVERY_DCNAME"), "The dc name used in service discovery")
 }
 
 func nddCtlrOptions(c int) controller.Options {

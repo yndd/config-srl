@@ -19,6 +19,7 @@ package worker
 import (
 	"os"
 	"reflect"
+	"strconv"
 	"time"
 
 	"net/http"
@@ -104,9 +105,10 @@ var startCmd = &cobra.Command{
 		})
 		// inittialize the target controller
 		tc, err := targetcontroller.New(cmd.Context(), ctrl.GetConfigOrDie(), &targetcontroller.Options{
-			Logger:         logger,
-			Registrator:    reg,
-			TargetRegistry: tr,
+			Logger:            logger,
+			Registrator:       reg,
+			GrpcServerAddress: ":" + strconv.Itoa(pkgmetav1.GnmiServerPort),
+			TargetRegistry:    tr,
 			TargetModel: &model.Model{
 				StructRootType:  reflect.TypeOf((*ygotsrl.Device)(nil)),
 				SchemaTreeRoot:  ygotsrl.SchemaTree["Device"],
@@ -184,7 +186,7 @@ func init() {
 	startCmd.Flags().StringVarP(&grpcQueryAddress, "grpc-query-address", "", "", "Validation query address.")
 	startCmd.Flags().BoolVarP(&autoPilot, "autopilot", "a", true,
 		"Apply delta/diff changes to the config automatically when set to true, if set to false the provider will report the delta and the operator should intervene what to do with the delta/diffs")
-	startCmd.Flags().StringVarP(&serviceDiscovery, "service-discovery", "", "consul", "the service discovery kind used in this deployment")
-	startCmd.Flags().StringVarP(&serviceDiscoveryNamespace, "service-discovery-namespace", "", "consul", "the namespace for service discovery")
-	startCmd.Flags().StringVarP(&serviceDiscoveryDcName, "service-discovery-dc-name", "", "", "The dc name of the controller configuration")
+	startCmd.Flags().StringVarP(&serviceDiscovery, "service-discovery", "", os.Getenv("SERVICE_DISCOVERY"), "the service discovery kind used in this deployment")
+	startCmd.Flags().StringVarP(&serviceDiscoveryNamespace, "service-discovery-namespace", "", os.Getenv("SERVICE_DISCOVERY_NAMESPACE"), "the namespace used for service discovery")
+	startCmd.Flags().StringVarP(&serviceDiscoveryDcName, "service-discovery-dc-name", "", os.Getenv("SERVICE_DISCOVERY_DCNAME"), "The dc name used in service discovery")
 }

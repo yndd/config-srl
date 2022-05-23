@@ -8,14 +8,16 @@ VERSION ?= latest
 
 # IMAGE_TAG_BASE defines the docker.io namespace and part of the image name for remote images.
 # This variable is used to construct full image tags for ndd packages.
-IMAGE_TAG_BASE ?= yndd/ndd-config-srl
+IMAGE_TAG_BASE ?= yndd/config-srl
 
 # Image URL to use all building/pushing image targets
-#IMG ?= $(IMAGE_TAG_BASE)-controller:$(VERSION)
-IMG_RECONCILER ?= $(IMAGE_TAG_BASE)-reconciler:$(VERSION)
-IMG_WORKER ?= $(IMAGE_TAG_BASE)-worker:$(VERSION)
+IMG_INTEGRATED ?= $(IMAGE_TAG_BASE)-integrated-controller:$(VERSION)
+IMG_RECONCILER ?= $(IMAGE_TAG_BASE)-reconciler-controller:$(VERSION)
+IMG_WORKER ?= $(IMAGE_TAG_BASE)-worker-controller:$(VERSION)
 # Package
-PKG ?= $(IMAGE_TAG_BASE)
+PKG_INTEGRATED ?= $(IMAGE_TAG_BASE)-integrated
+PKG_RECONCILER ?= $(IMAGE_TAG_BASE)-reconciler
+PKG_WORKER ?= $(IMAGE_TAG_BASE)-worker
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -54,8 +56,10 @@ help: ## Display this help.
 
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	rm -rf package/crds/*
-	$(CONTROLLER_GEN) crd webhook paths="./..." output:crd:artifacts:config=package/crds
+	rm -rf package/integrated/crds/*
+	rm -rf package/reconciler/crds/*
+	$(CONTROLLER_GEN) crd webhook paths="./..." output:crd:artifacts:config=package/integrated/crds
+	$(CONTROLLER_GEN) crd webhook paths="./..." output:crd:artifacts:config=package/reconciler/crds
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 .PHONY: fmt
@@ -82,8 +86,13 @@ run: generate fmt vet ## Run a controller from your host.
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
+	docker build -f DockerfileIntegrated -t ${IMG_INTEGRATED} .
 	docker build -f DockerfileReconciler -t ${IMG_RECONCILER} .
 	docker build -f DockerfileWorker -t ${IMG_WORKER} .
+
+.PHONY: docker-build-integrated
+docker-build-integrated: test ## Build docker images.
+	docker build -f DockerfileIntegrated -t ${IMG_INTEGRATED} .
 
 .PHONY: docker-build-reconciler
 docker-build-reconciler: test ## Build docker images.
@@ -95,8 +104,13 @@ docker-build-worker: test ## Build docker images.
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
+	docker push ${IMG_INTEGRATED}
 	docker push ${IMG_RECONCILER}
 	docker push ${IMG_WORKER}
+
+.PHONY: docker-push-integrated
+docker-push-integrated: ## Push docker images.
+	docker push ${IMG_INTEGRATED}
 
 .PHONY: docker-push-reconciler
 docker-push-reconciler: ## Push docker images.
@@ -108,12 +122,18 @@ docker-push-worker: ## Push docker images.
 
 .PHONY: package-build
 package-build: kubectl-ndd ## build ndd package.
-	rm -rf package/*.nddpkg
-	cd package;PATH=$$PATH:$(LOCALBIN) kubectl ndd package build -t provider;cd ..
+	rm -rf package/integrated/*.nddpkg
+	cd package/integrated;PATH=$$PATH:$(LOCALBIN) kubectl ndd package build -t provider;cd ../..
+	rm -rf package/reconciler/*.nddpkg
+	cd package/reconciler;PATH=$$PATH:$(LOCALBIN) kubectl ndd package build -t provider;cd ../..
+	rm -rf package/worker/*.nddpkg
+	cd package/worker;PATH=$$PATH:$(LOCALBIN) kubectl ndd package build -t provider;cd ../..
 
 .PHONY: package-push
 package-push: kubectl-ndd ## build ndd package.
-	cd package;PATH=$$PATH:$(LOCALBIN) kubectl ndd package push ${PKG};cd ..
+	cd package/integrated;ls;PATH=$$PATH:$(LOCALBIN) kubectl ndd package push ${PKG_INTEGRATED};cd ../..
+	cd package/reconciler;ls;PATH=$$PATH:$(LOCALBIN) kubectl ndd package push ${PKG_RECONCILER};cd ../..
+	cd package/worker;ls;PATH=$$PATH:$(LOCALBIN) kubectl ndd package push ${PKG_WORKER};cd ../..
 
 ##@ Build Dependencies
 
