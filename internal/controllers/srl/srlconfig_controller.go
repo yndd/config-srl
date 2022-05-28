@@ -33,7 +33,7 @@ import (
 	"github.com/pkg/errors"
 	srlv1alpha1 "github.com/yndd/ndd-config-srl/apis/srl/v1alpha1"
 	"github.com/yndd/ndd-config-srl/pkg/ygotsrl"
-	pkgmetav1 "github.com/yndd/ndd-core/apis/pkg/meta/v1"
+	pkgv1 "github.com/yndd/ndd-core/apis/pkg/v1"
 	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 	"github.com/yndd/ndd-runtime/pkg/event"
 	"github.com/yndd/ndd-runtime/pkg/logging"
@@ -438,7 +438,7 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 
 	address, err := c.registrator.GetEndpointAddress(ctx,
 		os.Getenv("SERVICE_NAME"),
-		pkgmetav1.GetTargetTag(t.GetNamespace(), t.GetName()))
+		pkgv1.GetTargetTag(t.GetNamespace(), t.GetName()))
 
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot get query from registrator")

@@ -107,8 +107,8 @@ var startCmd = &cobra.Command{
 		// inittialize the target controller
 		tc, err := targetcontroller.New(cmd.Context(), ctrl.GetConfigOrDie(), &targetcontroller.Options{
 			Logger:            logger,
-			GrpcServerAddress: ":" + strconv.Itoa(pkgmetav1.GnmiServerPort),
 			Registrator:       reg,
+			GrpcServerAddress: ":" + strconv.Itoa(pkgmetav1.GnmiServerPort),
 			TargetRegistry:    tr,
 			TargetModel: &model.Model{
 				StructRootType:  reflect.TypeOf((*ygotsrl.Device)(nil)),
@@ -198,8 +198,6 @@ func init() {
 	startCmd.Flags().StringVarP(&podname, "podname", "", os.Getenv("POD_NAME"), "Name from the pod")
 	startCmd.Flags().StringVarP(&grpcServerAddress, "grpc-server-address", "s", "", "The address of the grpc server binds to.")
 	startCmd.Flags().StringVarP(&grpcWorkerAddress, "grpc-worker-address", "", strings.Join([]string{"127.0.0.1", strconv.Itoa(pkgmetav1.GnmiServerPort)}, ":"), "grpc worker address.")
-	startCmd.Flags().BoolVarP(&autoPilot, "autopilot", "a", true,
-		"Apply delta/diff changes to the config automatically when set to true, if set to false the provider will report the delta and the operator should intervene what to do with the delta/diffs")
 }
 
 func nddCtlrOptions(c int) controller.Options {

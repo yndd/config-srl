@@ -1,0 +1,30 @@
+apiVersion: meta.pkg.ndd.yndd.io/v1
+kind: Provider
+metadata:
+  name: config-srl-reconciler
+  namespace: ndd-system
+spec:
+  pod:
+    name: config-srl-reconciler
+    type: statefulset
+    permissionRequests:
+    containers:
+    - container:
+        name: kube-rbac-proxy
+        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
+        args:
+        - --secure-listen-address=0.0.0.0:8443
+        - --upstream=http://127.0.0.1:8080/
+        - --logtostderr=true
+        - --v=10
+        ports:
+        - containerPort: 8443
+          name: https
+    - container:
+        name: reconciler
+        image: yndd/config-srl-reconciler-controller:latest
+      extras:
+        - {name: webhook, webhook: true, service: true, certificate: true, port: 443, target-port: 9443}
+        - {name: grpc, service: true, certificate: true, port: 9999, target-port: 9999}
+        - {name: metrics, service: true, port: 8443, target-port: 443}
+        - {name: profiler, volume: true}
