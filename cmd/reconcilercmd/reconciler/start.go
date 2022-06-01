@@ -35,11 +35,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	srlv1alpha1 "github.com/yndd/ndd-config-srl/apis/srl/v1alpha1"
-	"github.com/yndd/ndd-config-srl/internal/controllers/srl"
+	srlv1alpha1 "github.com/yndd/config-srl/apis/srl/v1alpha1"
+	"github.com/yndd/config-srl/internal/controllers/srl"
 	"github.com/yndd/ndd-runtime/pkg/logging"
 	"github.com/yndd/ndd-runtime/pkg/ratelimiter"
-	"github.com/yndd/ndd-target-runtime/pkg/shared"
+	"github.com/yndd/ndd-runtime/pkg/shared"
 	"github.com/yndd/reconciler-controller/pkg/reconcilercontroller"
 	"github.com/yndd/registrator/registrator"
 	//+kubebuilder:scaffold:imports
@@ -57,7 +57,7 @@ var (
 	grpcQueryAddress          string
 	autoPilot                 bool
 	serviceDiscovery          string
-	serviceDiscoveryNamespace string // todo initialization
+	serviceDiscoveryNamespace string
 	serviceDiscoveryDcName    string
 )
 
@@ -127,9 +127,9 @@ var startCmd = &cobra.Command{
 
 		// initialize controllers
 		_, _, err = srl.Setup(mgr, &shared.NddControllerOptions{
-			Logger:      logging.NewLogrLogger(zlog.WithName("srl")),
-			Poll:        pollInterval,
-			Namespace:   namespace,
+			Logger:    logging.NewLogrLogger(zlog.WithName("srl")),
+			Poll:      pollInterval,
+			Namespace: namespace,
 			Copts: controller.Options{
 				MaxConcurrentReconciles: concurrency,
 				RateLimiter:             ratelimiter.NewDefaultProviderRateLimiter(ratelimiter.DefaultProviderRPS),

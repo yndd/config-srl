@@ -23,61 +23,55 @@ package v1alpha1
 import nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 
 // GetActive of this Srl3Device.
-func (mg *SrlConfig) GetDeploymentPolicy() nddv1.DeploymentPolicy {
-	return mg.Spec.DeploymentPolicy
+func (x *SrlConfig) GetDeploymentPolicy() nddv1.DeploymentPolicy {
+	return x.Spec.Lifecycle.DeploymentPolicy
 }
 
 // GetCondition of this Srl3Device.
-func (mg *SrlConfig) GetCondition(ck nddv1.ConditionKind) nddv1.Condition {
-	return mg.Status.GetCondition(ck)
+func (x *SrlConfig) GetCondition(ck nddv1.ConditionKind) nddv1.Condition {
+	return x.Status.GetCondition(ck)
 }
 
 // GetDeletionPolicy of this Srl3Device.
-func (mg *SrlConfig) GetDeletionPolicy() nddv1.DeletionPolicy {
-	return mg.Spec.DeletionPolicy
+func (x *SrlConfig) GetDeletionPolicy() nddv1.DeletionPolicy {
+	return x.Spec.Lifecycle.DeletionPolicy
 }
 
 // GetTargetReference of this Srl3Device.
-func (mg *SrlConfig) GetTargetReference() *nddv1.Reference {
-	return mg.Spec.TargetReference
+func (x *SrlConfig) GetTargetReference() *nddv1.Reference {
+	return x.Spec.TargetReference
 }
 
 // SetRootPaths of this Srl3Device.
-func (mg *SrlConfig) GetRootPaths() []string {
-	return mg.Status.RootPaths
-}
-
-// SetHierPaths of this Srl3Device.
-func (mg *SrlConfig) GetHierPaths() map[string][]string {
-	return mg.Status.HierPaths
+func (x *SrlConfig) GetRootPaths() []string {
+	return x.Status.RootPaths
 }
 
 // SetActive of this Srl3Device.
-func (mg *SrlConfig) SetDeploymentPolicy(b nddv1.DeploymentPolicy) {
-	mg.Spec.DeploymentPolicy = b
+func (x *SrlConfig) SetDeploymentPolicy(b nddv1.DeploymentPolicy) {
+	x.Spec.Lifecycle.DeploymentPolicy = b
 }
 
 // SetConditions of this Srl3Device.
-func (mg *SrlConfig) SetConditions(c ...nddv1.Condition) {
-	mg.Status.SetConditions(c...)
+func (x *SrlConfig) SetConditions(c ...nddv1.Condition) {
+	x.Status.SetConditions(c...)
 }
 
 // SetDeletionPolicy of this Srl3Device.
-func (mg *SrlConfig) SetDeletionPolicy(r nddv1.DeletionPolicy) {
-	mg.Spec.DeletionPolicy = r
+func (x *SrlConfig) SetDeletionPolicy(r nddv1.DeletionPolicy) {
+	x.Spec.Lifecycle.DeletionPolicy = r
 }
 
 // SetTargetReference of this Srl3Device.
-func (mg *SrlConfig) SetTargetReference(r *nddv1.Reference) {
-	mg.Spec.TargetReference = r
+func (x *SrlConfig) SetTargetReference(r *nddv1.Reference) {
+	x.Spec.TargetReference = r
 }
 
 // SetRootPaths of this Srl3Device.
-func (mg *SrlConfig) SetRootPaths(n []string) {
-	mg.Status.RootPaths = n
+func (x *SrlConfig) SetRootPaths(n []string) {
+	x.Status.RootPaths = n
 }
 
-// SetHierPaths of this Srl3Device.
-func (mg *SrlConfig) SetHierPaths(n map[string][]string) {
-	mg.Status.HierPaths = n
+func (x *SrlConfig) SetHealthConditions(c nddv1.HealthConditionedStatus) {
+	x.Status.Health = c
 }

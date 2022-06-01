@@ -71,8 +71,8 @@ func init() {
 
 // Device type metadata.
 var (
-	DeviceKindKind         = reflect.TypeOf(SrlConfig{}).Name()
-	DeviceGroupKind        = schema.GroupKind{Group: Group, Kind: DeviceKindKind}.String()
-	DeviceKindAPIVersion   = DeviceKindKind + "." + GroupVersion.String()
-	DeviceGroupVersionKind = GroupVersion.WithKind(DeviceKindKind)
+	DeviceKind             = reflect.TypeOf(SrlConfig{}).Name()
+	DeviceGroupKind        = schema.GroupKind{Group: Group, Kind: DeviceKind}.String()
+	DeviceKindAPIVersion   = DeviceKind + "." + GroupVersion.String()
+	DeviceGroupVersionKind = GroupVersion.WithKind(DeviceKind)
 )

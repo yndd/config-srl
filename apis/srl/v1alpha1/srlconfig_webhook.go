@@ -20,7 +20,7 @@ import (
 	"reflect"
 
 	"github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/yndd/ndd-config-srl/pkg/ygotsrl"
+	"github.com/yndd/config-srl/pkg/ygotsrl"
 	"github.com/yndd/ndd-runtime/pkg/model"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"

@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/yndd/ndd-target-runtime/pkg/rootpaths"
 	"github.com/yndd/ndd-yang/pkg/yparser"
+	"github.com/yndd/target/pkg/rootpaths"
 )
 
 /*

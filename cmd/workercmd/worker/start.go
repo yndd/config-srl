@@ -31,16 +31,16 @@ import (
 	"github.com/yndd/ndd-runtime/pkg/model"
 	"github.com/yndd/registrator/registrator"
 
-	itarget "github.com/yndd/ndd-config-srl/internal/controllers/target"
-	"github.com/yndd/ndd-config-srl/internal/target/srl"
-	"github.com/yndd/ndd-config-srl/pkg/ygotsrl"
+	itarget "github.com/yndd/config-srl/internal/controllers/target"
+	"github.com/yndd/config-srl/internal/target/srl"
+	"github.com/yndd/config-srl/pkg/ygotsrl"
 	pkgmetav1 "github.com/yndd/ndd-core/apis/pkg/meta/v1"
 	"github.com/yndd/ndd-runtime/pkg/logging"
 	"github.com/yndd/ndd-runtime/pkg/ratelimiter"
-	"github.com/yndd/ndd-target-runtime/pkg/shared"
-	"github.com/yndd/ndd-target-runtime/pkg/target"
-	"github.com/yndd/ndd-target-runtime/pkg/targetcontroller"
-	"github.com/yndd/ndd-target-runtime/pkg/ygotnddtarget"
+	"github.com/yndd/ndd-runtime/pkg/shared"
+	targetv1 "github.com/yndd/target/apis/target/v1"
+	"github.com/yndd/target/pkg/target"
+	"github.com/yndd/target/pkg/targetcontroller"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -100,7 +100,7 @@ var startCmd = &cobra.Command{
 
 		// initialize the target registry and register the vendor type
 		tr := target.NewTargetRegistry()
-		tr.RegisterInitializer(ygotnddtarget.NddTarget_VendorType_nokia_srl, func() target.Target {
+		tr.RegisterInitializer(targetv1.VendorTypeNokiaSRL, func() target.Target {
 			return srl.New()
 		})
 		// inittialize the target controller

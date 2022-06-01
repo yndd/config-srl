@@ -16,7 +16,7 @@ limitations under the License.
 
 package main
 
-import "github.com/yndd/ndd-config-srl/cmd/reconcilercmd/reconciler"
+import "github.com/yndd/config-srl/cmd/reconcilercmd/reconciler"
 
 func main() {
 	reconciler.Execute()
