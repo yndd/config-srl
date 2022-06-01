@@ -437,6 +437,7 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 		return nil, errors.New(targetNotConfigured)
 	}
 
+	// TODO check ServiceDiscovery and decide to use the address or dns resolution
 	address, err := c.registrator.GetEndpointAddress(ctx,
 		os.Getenv("SERVICE_NAME"),
 		pkgv1.GetTargetTag(t.GetNamespace(), t.GetName()))

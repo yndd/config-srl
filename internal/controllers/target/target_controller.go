@@ -32,9 +32,9 @@ func Setup(mgr ctrl.Manager, nddopts *shared.NddControllerOptions) error {
 	name := "target.yndd.io/" + strings.ToLower(targetv1.TargetKind)
 
 	r := target.NewReconciler(mgr,
-		target.WithPollInterval(nddopts.Poll),
-		target.WithAddress(nddopts.GnmiAddress),
+		target.WithTargetChannel(nddopts.)
 		target.WithExpectedVendorType(targetv1.VendorTypeNokiaSRL),
+		target.WithPollInterval(nddopts.Poll),
 		target.WithLogger(nddopts.Logger.WithValues("Target", name)),
 		target.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))))
 

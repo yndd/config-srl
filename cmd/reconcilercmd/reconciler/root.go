@@ -40,7 +40,7 @@ var (
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "manager",
-	Short: "srl config reconciler",
+	Short: "config srl reconciler",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 	},
 }
@@ -61,7 +61,5 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(srlv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(targetv1.AddToScheme(scheme))
-	//utilruntime.Must(certv1.AddToScheme(scheme))
-	//utilruntime.Must(certmetav1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
