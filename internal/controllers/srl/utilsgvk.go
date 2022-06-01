@@ -6,7 +6,7 @@ import (
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/ygot/ygot"
 	"github.com/pkg/errors"
-	srlv1alpha1 "github.com/yndd/ndd-config-srl/apis/srl/v1alpha1"
+	srlv1alpha1 "github.com/yndd/config-srl/apis/srl/v1alpha1"
 	"github.com/yndd/ndd-runtime/pkg/reconciler/managed"
 	"github.com/yndd/ndd-runtime/pkg/resource"
 	"github.com/yndd/ndd-yang/pkg/yparser"

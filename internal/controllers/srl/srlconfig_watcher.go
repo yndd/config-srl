@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	srlv1alpha1 "github.com/yndd/ndd-config-srl/apis/srl/v1alpha1"
+	srlv1alpha1 "github.com/yndd/config-srl/apis/srl/v1alpha1"
 )
 
 type adder interface {

@@ -52,8 +52,8 @@ type IFSrlConfig interface {
 	SetDeploymentPolicy(b nddv1.DeploymentPolicy)
 	GetDeletionPolicy() nddv1.DeletionPolicy
 	SetDeletionPolicy(r nddv1.DeletionPolicy)
-	GetHierPaths() map[string][]string
-	SetHierPaths(n map[string][]string)
+	//GetHierPaths() map[string][]string
+	//SetHierPaths(n map[string][]string)
 	GetTargetReference() *nddv1.Reference
 	SetTargetReference(r *nddv1.Reference)
 	GetRootPaths() []string

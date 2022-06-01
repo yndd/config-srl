@@ -31,24 +31,25 @@ import (
 	"github.com/openconfig/ygot/ygot"
 	"github.com/openconfig/ygot/ytypes"
 	"github.com/pkg/errors"
-	srlv1alpha1 "github.com/yndd/ndd-config-srl/apis/srl/v1alpha1"
-	"github.com/yndd/ndd-config-srl/pkg/ygotsrl"
+	srlv1alpha1 "github.com/yndd/config-srl/apis/srl/v1alpha1"
+	"github.com/yndd/config-srl/pkg/ygotsrl"
 	pkgv1 "github.com/yndd/ndd-core/apis/pkg/v1"
 	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 	"github.com/yndd/ndd-runtime/pkg/event"
 	"github.com/yndd/ndd-runtime/pkg/logging"
+	"github.com/yndd/ndd-runtime/pkg/meta"
 	"github.com/yndd/ndd-runtime/pkg/model"
 	"github.com/yndd/ndd-runtime/pkg/reconciler/managed"
 	"github.com/yndd/ndd-runtime/pkg/resource"
+	"github.com/yndd/ndd-runtime/pkg/shared"
 	"github.com/yndd/ndd-runtime/pkg/utils"
-	targetv1 "github.com/yndd/ndd-target-runtime/apis/dvr/v1"
-	"github.com/yndd/ndd-target-runtime/pkg/cachename"
-	"github.com/yndd/ndd-target-runtime/pkg/rootpaths"
-	"github.com/yndd/ndd-target-runtime/pkg/shared"
 	"github.com/yndd/ndd-yang/pkg/yparser"
 	"github.com/yndd/nddp-system/pkg/gvkresource"
 	"github.com/yndd/nddp-system/pkg/ygotnddp"
 	"github.com/yndd/registrator/registrator"
+	targetv1 "github.com/yndd/target/apis/target/v1"
+	"github.com/yndd/target/pkg/cachename"
+	"github.com/yndd/target/pkg/rootpaths"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
@@ -492,7 +493,7 @@ func (e *externalDevice) Create(ctx context.Context, mg resource.Managed, obs ma
 		return errors.Wrap(err, errCreateDevice)
 	}
 
-	crTarget := cachename.GetNamespacedName(mg.GetNamespace(), mg.GetTargetReference().Name)
+	crTarget := meta.GetNamespacedName(mg.GetNamespace(), mg.GetTargetReference().Name)
 
 	req := &gnmi.SetRequest{
 		Prefix:  &gnmi.Path{Target: crTarget, Origin: cachename.SystemCachePrefix},
@@ -516,7 +517,7 @@ func (e *externalDevice) Update(ctx context.Context, mg resource.Managed, obs ma
 		return errors.Wrap(err, errCreateDevice)
 	}
 
-	crTarget := cachename.GetNamespacedName(mg.GetNamespace(), mg.GetTargetReference().Name)
+	crTarget := meta.GetNamespacedName(mg.GetNamespace(), mg.GetTargetReference().Name)
 
 	req := &gnmi.SetRequest{
 		Prefix:  &gnmi.Path{Target: crTarget, Origin: cachename.SystemCachePrefix},
@@ -540,7 +541,7 @@ func (e *externalDevice) Delete(ctx context.Context, mg resource.Managed, obs ma
 		return errors.Wrap(err, errCreateDevice)
 	}
 
-	crTarget := cachename.GetNamespacedName(mg.GetNamespace(), mg.GetTargetReference().Name)
+	crTarget := meta.GetNamespacedName(mg.GetNamespace(), mg.GetTargetReference().Name)
 
 	req := &gnmi.SetRequest{
 		Prefix:  &gnmi.Path{Target: crTarget, Origin: cachename.SystemCachePrefix},
@@ -557,7 +558,7 @@ func (e *externalDevice) Delete(ctx context.Context, mg resource.Managed, obs ma
 
 func (e *externalDevice) GetSystemConfig(ctx context.Context, mg resource.Managed) (*ygotnddp.Device, error) {
 	// get system device list
-	crTarget := cachename.GetNamespacedName(mg.GetNamespace(), mg.GetTargetReference().Name)
+	crTarget := meta.GetNamespacedName(mg.GetNamespace(), mg.GetTargetReference().Name)
 	// gnmi get request
 	reqSystemCache := &gnmi.GetRequest{
 		Prefix:   &gnmi.Path{Target: crTarget, Origin: cachename.SystemCachePrefix},
@@ -612,7 +613,7 @@ func (e *externalDevice) GetSystemConfig(ctx context.Context, mg resource.Manage
 
 func (e *externalDevice) GetRunningConfig(ctx context.Context, mg resource.Managed) ([]byte, error) {
 	// get actual device config
-	crTarget := cachename.GetNamespacedName(mg.GetNamespace(), mg.GetTargetReference().Name)
+	crTarget := meta.GetNamespacedName(mg.GetNamespace(), mg.GetTargetReference().Name)
 	// gnmi get request
 	reqRunningConfig := &gnmi.GetRequest{
 		Prefix:   &gnmi.Path{Target: crTarget, Origin: cachename.ConfigCachePrefix},

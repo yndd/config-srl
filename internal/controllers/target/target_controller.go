@@ -20,22 +20,21 @@ import (
 	"strings"
 
 	"github.com/yndd/ndd-runtime/pkg/event"
-	targetv1 "github.com/yndd/ndd-target-runtime/apis/dvr/v1"
-	"github.com/yndd/ndd-target-runtime/pkg/reconciler/target"
-	"github.com/yndd/ndd-target-runtime/pkg/resource"
-	"github.com/yndd/ndd-target-runtime/pkg/shared"
-	"github.com/yndd/ndd-target-runtime/pkg/ygotnddtarget"
+	"github.com/yndd/ndd-runtime/pkg/resource"
+	"github.com/yndd/ndd-runtime/pkg/shared"
+	targetv1 "github.com/yndd/target/apis/target/v1"
+	"github.com/yndd/target/pkg/reconciler/target"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 // SetupDevice adds a controller that reconciles Devices.
 func Setup(mgr ctrl.Manager, nddopts *shared.NddControllerOptions) error {
-	name := "dvr/" + strings.ToLower(targetv1.TargetKind)
+	name := "target.yndd.io/" + strings.ToLower(targetv1.TargetKind)
 
 	r := target.NewReconciler(mgr,
 		target.WithPollInterval(nddopts.Poll),
 		target.WithAddress(nddopts.GnmiAddress),
-		target.WithExpectedVendorType(ygotnddtarget.NddTarget_VendorType_nokia_srl),
+		target.WithExpectedVendorType(targetv1.VendorTypeNokiaSRL),
 		target.WithLogger(nddopts.Logger.WithValues("Target", name)),
 		target.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))))
 

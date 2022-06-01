@@ -23,8 +23,8 @@ import (
 
 	//certv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	//certmetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	srlv1alpha1 "github.com/yndd/ndd-config-srl/apis/srl/v1alpha1"
-	targetv1 "github.com/yndd/ndd-target-runtime/apis/dvr/v1"
+	srlv1alpha1 "github.com/yndd/config-srl/apis/srl/v1alpha1"
+	targetv1 "github.com/yndd/target/apis/target/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"

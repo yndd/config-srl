@@ -25,14 +25,11 @@ import (
 	gnmictarget "github.com/karimra/gnmic/target"
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmi/proto/gnmi_ext"
-	"github.com/openconfig/ygot/ygot"
 	"github.com/pkg/errors"
 	"github.com/yndd/ndd-runtime/pkg/logging"
-	"github.com/yndd/ndd-runtime/pkg/utils"
-	targetv1 "github.com/yndd/ndd-target-runtime/apis/dvr/v1"
-	"github.com/yndd/ndd-target-runtime/pkg/target"
-	"github.com/yndd/ndd-target-runtime/pkg/ygotnddtarget"
 	"github.com/yndd/ndd-yang/pkg/yparser"
+	targetv1 "github.com/yndd/target/apis/target/v1"
+	"github.com/yndd/target/pkg/target"
 )
 
 const (
@@ -182,22 +179,22 @@ func (t *srl) getDiscoveryInfo(ctx context.Context) (*targetv1.DiscoveryInfo, er
 		return nil, err
 	}
 	devDetails := &targetv1.DiscoveryInfo{
-		VendorType: ygot.String(ygotnddtarget.NddTarget_VendorType_nokia_srl.String()),
+		VendorType: targetv1.VendorTypeNokiaSRL,
 	}
 	for _, notif := range resp.GetNotification() {
 		for _, upd := range notif.GetUpdate() {
 			p := gutils.GnmiPathToXPath(upd.GetPath(), true)
 			switch p {
 			case "platform/control/software-version":
-				if devDetails.SwVersion == nil {
-					devDetails.SwVersion = utils.StringPtr(upd.GetVal().GetStringVal())
+				if devDetails.SwVersion == "" {
+					devDetails.SwVersion = upd.GetVal().GetStringVal()
 				}
 			case "platform/chassis/type":
-				devDetails.Kind = utils.StringPtr(upd.GetVal().GetStringVal())
+				devDetails.Platform = upd.GetVal().GetStringVal()
 			case "platform/chassis/serial-number":
-				devDetails.SerialNumber = utils.StringPtr(upd.GetVal().GetStringVal())
+				devDetails.SerialNumber = upd.GetVal().GetStringVal()
 			case "platform/chassis/hw-mac-address":
-				devDetails.MacAddress = utils.StringPtr(upd.GetVal().GetStringVal())
+				devDetails.MacAddress = upd.GetVal().GetStringVal()
 			}
 		}
 	}

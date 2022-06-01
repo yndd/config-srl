@@ -1,5 +1,5 @@
 version: "1"
 domain: ndd.yndd.io
-repository: github.com/yndd/ndd-config-srl
-name: ndd-config-srl
+repository: github.com/yndd/config-srl
+name: config-srl
 resources: []
