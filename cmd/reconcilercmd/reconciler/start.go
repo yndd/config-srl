@@ -127,9 +127,9 @@ var startCmd = &cobra.Command{
 
 		// initialize controllers
 		_, _, err = srl.Setup(mgr, &shared.NddControllerOptions{
-			Logger:    logging.NewLogrLogger(zlog.WithName("srl")),
-			Poll:      pollInterval,
-			Namespace: namespace,
+			Logger:      logging.NewLogrLogger(zlog.WithName("srl")),
+			Poll:        pollInterval,
+			Namespace:   namespace,
 			Registrator: reg,
 			Copts: controller.Options{
 				MaxConcurrentReconciles: concurrency,
