@@ -55,9 +55,7 @@ help: ## Display this help.
 
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	rm -rf package/integrated/crds/*
 	rm -rf package/reconciler/crds/*
-	$(CONTROLLER_GEN) crd webhook paths="./..." output:crd:artifacts:config=package/integrated/crds
 	$(CONTROLLER_GEN) crd webhook paths="./..." output:crd:artifacts:config=package/reconciler/crds
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
@@ -112,13 +110,14 @@ docker-push-worker: ## Push docker images.
 .PHONY: package-build
 package-build: kubectl-ndd ## build ndd package.
 	rm -rf package/reconciler/*.nddpkg
+	gomplate -d repo=env:REPO -f package/reconciler/ndd.gotmpl > package/reconciler/ndd.yaml
 	cd package/reconciler;PATH=$$PATH:$(LOCALBIN) kubectl ndd package build -t provider;cd ../..
 	rm -rf package/worker/*.nddpkg
+	gomplate -d repo=env:REPO -f package/worker/ndd.gotmpl > package/worker/ndd.yaml
 	cd package/worker;PATH=$$PATH:$(LOCALBIN) kubectl ndd package build -t provider;cd ../..
 
 .PHONY: package-push
 package-push: kubectl-ndd ## build ndd package.
-	cd package/integrated;ls;PATH=$$PATH:$(LOCALBIN) kubectl ndd package push ${PKG_INTEGRATED};cd ../..
 	cd package/reconciler;ls;PATH=$$PATH:$(LOCALBIN) kubectl ndd package push ${PKG_RECONCILER};cd ../..
 	cd package/worker;ls;PATH=$$PATH:$(LOCALBIN) kubectl ndd package push ${PKG_WORKER};cd ../..
 

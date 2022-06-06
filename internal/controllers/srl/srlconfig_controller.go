@@ -19,8 +19,10 @@ package srl
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"reflect"
+	"strings"
 
 	//"strings"
 	"time"
@@ -31,14 +33,17 @@ import (
 	"github.com/openconfig/ygot/ygot"
 	"github.com/openconfig/ygot/ytypes"
 	"github.com/pkg/errors"
+	"github.com/yndd/cache/pkg/model"
+	"github.com/yndd/cache/pkg/origin"
+	"github.com/yndd/cache/pkg/rootpaths"
 	srlv1alpha1 "github.com/yndd/config-srl/apis/srl/v1alpha1"
-	"github.com/yndd/config-srl/pkg/ygotsrl"
+	pkgmetav1 "github.com/yndd/ndd-core/apis/pkg/meta/v1"
 	pkgv1 "github.com/yndd/ndd-core/apis/pkg/v1"
-	nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
+
+	//nddv1 "github.com/yndd/ndd-runtime/apis/common/v1"
 	"github.com/yndd/ndd-runtime/pkg/event"
 	"github.com/yndd/ndd-runtime/pkg/logging"
 	"github.com/yndd/ndd-runtime/pkg/meta"
-	"github.com/yndd/ndd-runtime/pkg/model"
 	"github.com/yndd/ndd-runtime/pkg/reconciler/managed"
 	"github.com/yndd/ndd-runtime/pkg/resource"
 	"github.com/yndd/ndd-runtime/pkg/shared"
@@ -48,11 +53,11 @@ import (
 	"github.com/yndd/nddp-system/pkg/ygotnddp"
 	"github.com/yndd/registrator/registrator"
 	targetv1 "github.com/yndd/target/apis/target/v1"
-	"github.com/yndd/target/pkg/cachename"
-	"github.com/yndd/target/pkg/rootpaths"
+	"github.com/yndd/ygotsrl"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	corev1 "k8s.io/api/core/v1"
+
+	//corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -79,17 +84,17 @@ func Setup(mgr ctrl.Manager, nddopts *shared.NddControllerOptions) (string, chan
 	events := make(chan cevent.GenericEvent)
 
 	dm := &model.Model{
-		StructRootType:  reflect.TypeOf((*ygotsrl.Device)(nil)),
-		SchemaTreeRoot:  ygotsrl.SchemaTree["Device"],
-		JsonUnmarshaler: ygotsrl.Unmarshal,
-		EnumData:        ygotsrl.ΛEnum,
+		StructRootType: reflect.TypeOf((*ygotsrl.Device)(nil)),
+		SchemaTreeRoot: ygotsrl.SchemaTree["Device"],
+		//JsonUnmarshaler: ygotsrl.Unmarshal,
+		EnumData: ygotsrl.ΛEnum,
 	}
 
 	sm := &model.Model{
-		StructRootType:  reflect.TypeOf((*ygotnddp.Device)(nil)),
-		SchemaTreeRoot:  ygotnddp.SchemaTree["Device"],
-		JsonUnmarshaler: ygotnddp.Unmarshal,
-		EnumData:        ygotnddp.ΛEnum,
+		StructRootType: reflect.TypeOf((*ygotnddp.Device)(nil)),
+		SchemaTreeRoot: ygotnddp.SchemaTree["Device"],
+		//JsonUnmarshaler: ygotnddp.Unmarshal,
+		EnumData: ygotnddp.ΛEnum,
 	}
 
 	r := managed.NewReconciler(mgr,
@@ -164,12 +169,12 @@ func (v *validatorDevice) GetCrStatus(ctx context.Context, mg resource.Managed, 
 		}, nil
 	}
 	switch gvk.Status {
-	case ygotnddp.NddpSystem_ResourceStatus_PENDING:
+	case ygotnddp.YnddSystem_ResourceStatus_PENDING:
 		return managed.CrObservation{
 			Exists:  true,
 			Pending: true,
 		}, nil
-	case ygotnddp.NddpSystem_ResourceStatus_FAILED:
+	case ygotnddp.YnddSystem_ResourceStatus_FAILED:
 		return managed.CrObservation{
 			Exists:  true,
 			Failed:  true,
@@ -433,17 +438,22 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 		return nil, errors.Wrap(err, errGetTarget)
 	}
 
-	if t.GetCondition(nddv1.ConditionKindReady).Status != corev1.ConditionTrue {
-		return nil, errors.New(targetNotConfigured)
-	}
+	// TODO Target status should be updated
+	//if t.GetCondition(nddv1.ConditionKindReady).Status != corev1.ConditionTrue {
+	//	return nil, errors.New(targetNotConfigured)
+	//}
 
-	// TODO check ServiceDiscovery and decide to use the address or dns resolution
-	address, err := c.registrator.GetEndpointAddress(ctx,
-		os.Getenv("SERVICE_NAME"),
-		pkgv1.GetTargetTag(t.GetNamespace(), t.GetName()))
+	workerservice := strings.Join([]string{os.Getenv("COMPOSITE_PROVIDER_NAME"), "worker-controller-grpc-svc"}, "-")
+	address := fmt.Sprintf("%s.%s.%s.%s.%s:%d", workerservice, os.Getenv("POD_NAMESPACE"), "svc", "cluster", "local", pkgmetav1.GnmiServerPort)
 
-	if err != nil {
-		return nil, errors.Wrap(err, "cannot get query from registrator")
+	if os.Getenv("SERVICE_DISCOVERY") != "" {
+		var err error
+		address, err = c.registrator.GetEndpointAddress(ctx,
+			os.Getenv("SERVICE_NAME"),
+			pkgv1.GetTargetTag(t.GetNamespace(), t.GetName()))
+		if err != nil {
+			return nil, errors.Wrap(err, "cannot get query from registrator")
+		}
 	}
 
 	cfg := &gnmitypes.TargetConfig{
@@ -489,7 +499,7 @@ func (e *externalDevice) Create(ctx context.Context, mg resource.Managed, obs ma
 	log := e.log.WithValues("Resource", mg.GetName())
 	log.Debug("Creating ...")
 
-	updates, err := e.getGvkUpate(mg, obs, ygotnddp.NddpSystem_ResourceAction_CREATE)
+	updates, err := e.getGvkUpate(mg, obs, ygotnddp.YnddSystem_ResourceAction_CREATE)
 	if err != nil {
 		return errors.Wrap(err, errCreateDevice)
 	}
@@ -497,7 +507,7 @@ func (e *externalDevice) Create(ctx context.Context, mg resource.Managed, obs ma
 	crTarget := meta.GetNamespacedName(mg.GetNamespace(), mg.GetTargetReference().Name)
 
 	req := &gnmi.SetRequest{
-		Prefix:  &gnmi.Path{Target: crTarget, Origin: cachename.SystemCachePrefix},
+		Prefix:  &gnmi.Path{Target: crTarget, Origin: origin.System},
 		Replace: updates,
 	}
 
@@ -513,7 +523,7 @@ func (e *externalDevice) Update(ctx context.Context, mg resource.Managed, obs ma
 	log := e.log.WithValues("Resource", mg.GetName())
 	log.Debug("Updating ...")
 
-	updates, err := e.getGvkUpate(mg, obs, ygotnddp.NddpSystem_ResourceAction_UPDATE)
+	updates, err := e.getGvkUpate(mg, obs, ygotnddp.YnddSystem_ResourceAction_UPDATE)
 	if err != nil {
 		return errors.Wrap(err, errCreateDevice)
 	}
@@ -521,7 +531,7 @@ func (e *externalDevice) Update(ctx context.Context, mg resource.Managed, obs ma
 	crTarget := meta.GetNamespacedName(mg.GetNamespace(), mg.GetTargetReference().Name)
 
 	req := &gnmi.SetRequest{
-		Prefix:  &gnmi.Path{Target: crTarget, Origin: cachename.SystemCachePrefix},
+		Prefix:  &gnmi.Path{Target: crTarget, Origin: origin.System},
 		Replace: updates,
 	}
 
@@ -537,7 +547,7 @@ func (e *externalDevice) Delete(ctx context.Context, mg resource.Managed, obs ma
 	log := e.log.WithValues("Resource", mg.GetName())
 	log.Debug("Deleting ...", "obs", obs)
 
-	updates, err := e.getGvkUpate(mg, obs, ygotnddp.NddpSystem_ResourceAction_DELETE)
+	updates, err := e.getGvkUpate(mg, obs, ygotnddp.YnddSystem_ResourceAction_DELETE)
 	if err != nil {
 		return errors.Wrap(err, errCreateDevice)
 	}
@@ -545,7 +555,7 @@ func (e *externalDevice) Delete(ctx context.Context, mg resource.Managed, obs ma
 	crTarget := meta.GetNamespacedName(mg.GetNamespace(), mg.GetTargetReference().Name)
 
 	req := &gnmi.SetRequest{
-		Prefix:  &gnmi.Path{Target: crTarget, Origin: cachename.SystemCachePrefix},
+		Prefix:  &gnmi.Path{Target: crTarget, Origin: origin.System},
 		Replace: updates,
 	}
 
@@ -562,7 +572,7 @@ func (e *externalDevice) GetSystemConfig(ctx context.Context, mg resource.Manage
 	crTarget := meta.GetNamespacedName(mg.GetNamespace(), mg.GetTargetReference().Name)
 	// gnmi get request
 	reqSystemCache := &gnmi.GetRequest{
-		Prefix:   &gnmi.Path{Target: crTarget, Origin: cachename.SystemCachePrefix},
+		Prefix:   &gnmi.Path{Target: crTarget, Origin: origin.System},
 		Path:     []*gnmi.Path{{}},
 		Encoding: gnmi.Encoding_JSON,
 	}
@@ -617,7 +627,7 @@ func (e *externalDevice) GetRunningConfig(ctx context.Context, mg resource.Manag
 	crTarget := meta.GetNamespacedName(mg.GetNamespace(), mg.GetTargetReference().Name)
 	// gnmi get request
 	reqRunningConfig := &gnmi.GetRequest{
-		Prefix:   &gnmi.Path{Target: crTarget, Origin: cachename.ConfigCachePrefix},
+		Prefix:   &gnmi.Path{Target: crTarget, Origin: origin.Config},
 		Path:     []*gnmi.Path{{}},
 		Encoding: gnmi.Encoding_JSON,
 	}

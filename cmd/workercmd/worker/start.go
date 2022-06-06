@@ -28,20 +28,27 @@ import (
 	"github.com/pkg/errors"
 	"github.com/pkg/profile"
 	"github.com/spf13/cobra"
-	"github.com/yndd/ndd-runtime/pkg/model"
+	"github.com/yndd/cache/pkg/cache"
+	"github.com/yndd/cache/pkg/origin"
+	"github.com/yndd/grpcserver"
 	"github.com/yndd/registrator/registrator"
 
+	"github.com/yndd/cache/pkg/model"
 	itarget "github.com/yndd/config-srl/internal/controllers/target"
 	"github.com/yndd/config-srl/internal/target/srl"
-	"github.com/yndd/config-srl/pkg/ygotsrl"
+	"github.com/yndd/grpchandlers/pkg/configgnmihandler"
+	"github.com/yndd/grpchandlers/pkg/healthhandler"
 	pkgmetav1 "github.com/yndd/ndd-core/apis/pkg/meta/v1"
 	"github.com/yndd/ndd-runtime/pkg/logging"
 	"github.com/yndd/ndd-runtime/pkg/ratelimiter"
 	"github.com/yndd/ndd-runtime/pkg/shared"
 	targetv1 "github.com/yndd/target/apis/target/v1"
+	"github.com/yndd/target/pkg/configtargetcontroller"
 	"github.com/yndd/target/pkg/target"
 	"github.com/yndd/target/pkg/targetcontroller"
+	"github.com/yndd/ygotsrl"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
@@ -86,6 +93,8 @@ var startCmd = &cobra.Command{
 			}()
 		}
 
+		// +kubebuilder:scaffold:builder
+
 		// create a service discovery registrator
 		reg, err := registrator.New(cmd.Context(), ctrl.GetConfigOrDie(), &registrator.Options{
 			Logger:                    logger,
@@ -103,27 +112,73 @@ var startCmd = &cobra.Command{
 		tr.RegisterInitializer(targetv1.VendorTypeNokiaSRL, func() target.Target {
 			return srl.New()
 		})
-		// inittialize the target controller
-		tc, err := targetcontroller.New(cmd.Context(), ctrl.GetConfigOrDie(), &targetcontroller.Options{
-			Logger:            logger,
-			Registrator:       reg,
-			GrpcServerAddress: ":" + strconv.Itoa(pkgmetav1.GnmiServerPort),
-			TargetRegistry:    tr,
-			TargetModel: &model.Model{
-				StructRootType:  reflect.TypeOf((*ygotsrl.Device)(nil)),
-				SchemaTreeRoot:  ygotsrl.SchemaTree["Device"],
-				JsonUnmarshaler: ygotsrl.Unmarshal,
-				EnumData:        ygotsrl.ΛEnum,
-			},
+
+		cl, err := client.New(ctrl.GetConfigOrDie(), client.Options{
+			Scheme: scheme,
 		})
 		if err != nil {
-			return errors.Wrap(err, "Cannot create target controller")
-		}
-		if err := tc.Start(); err != nil {
-			return errors.Wrap(err, "Cannot start target controller")
+			return errors.Wrap(err, "Cannot create client")
 		}
 
-		// +kubebuilder:scaffold:builder
+		// initialize the cache
+		c := cache.New()
+
+		cth := configtargetcontroller.New(cmd.Context(), ctrl.GetConfigOrDie(), &configtargetcontroller.Options{
+			Logger:         logger,
+			Client:         cl,
+			Registrator:    reg,
+			TargetRegistry: tr,
+			VendorType:     targetv1.VendorTypeNokiaSRL,
+			Cache:          c,
+			TargetModel: &model.Model{
+				StructRootType: reflect.TypeOf((*ygotsrl.Device)(nil)),
+				SchemaTreeRoot: ygotsrl.SchemaTree["Device"],
+				//JsonUnmarshaler: ygotsrl.Unmarshal,
+				EnumData: ygotsrl.ΛEnum,
+			},
+		})
+
+		ssc := configgnmihandler.New(&configgnmihandler.Options{
+			Logger: logger,
+			Cache:  c,
+		})
+
+		ssw := healthhandler.New(&healthhandler.Options{
+			Logger: logger,
+		})
+
+		s := grpcserver.New(grpcserver.Config{
+			Address: ":" + strconv.Itoa(pkgmetav1.GnmiServerPort),
+			GNMI:    true,
+			Health:  true,
+		},
+			grpcserver.WithLogger(logger),
+			grpcserver.WithClient(cl),
+			grpcserver.WithGetHandler(origin.Config, ssc.Get),
+			grpcserver.WithSetUpdateHandler(origin.Config, ssc.Set),
+			grpcserver.WithSetReplaceHandler(origin.Config, ssc.Set),
+			grpcserver.WithSetDeleteHandler(origin.Config, ssc.Delete),
+			grpcserver.WithGetHandler(origin.System, ssc.Get),
+			grpcserver.WithSetUpdateHandler(origin.System, ssc.Set),
+			grpcserver.WithSetReplaceHandler(origin.System, ssc.Set),
+			grpcserver.WithSetDeleteHandler(origin.System, ssc.Delete),
+			grpcserver.WithWatchHandler(ssw.Watch),
+			grpcserver.WithCheckHandler(ssw.Check),
+		)
+
+		// inittialize the target controller
+		tc := targetcontroller.New(cmd.Context(), &targetcontroller.Options{
+			Logger:      logger,
+			GrpcServer:  s,
+			Registrator: reg,
+			Cache:       c,
+		},
+			targetcontroller.SetStartTargetHandler(cth.StartTarget),
+			targetcontroller.SetStopTargetHandler(cth.StopTarget),
+		)
+		if err := tc.Start(); err != nil {
+			return err
+		}
 
 		zlog.Info("create manager")
 		mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -143,6 +198,7 @@ var startCmd = &cobra.Command{
 			Logger:    logger,
 			Poll:      pollInterval,
 			Namespace: namespace,
+			TargetCh:  tc.GetTargetChannel(),
 			Copts: controller.Options{
 				MaxConcurrentReconciles: concurrency,
 				RateLimiter:             ratelimiter.NewDefaultProviderRateLimiter(ratelimiter.DefaultProviderRPS),

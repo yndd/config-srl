@@ -4,25 +4,27 @@ go 1.17
 
 require (
 	github.com/karimra/gnmic v0.24.1
-	github.com/openconfig/gnmi v0.0.0-20220131173555-39aa74195f0d
-	github.com/openconfig/goyang v1.0.0
-	github.com/openconfig/ygot v0.17.0
+	github.com/openconfig/gnmi v0.0.0-20220503232738-6eb133c65a13
+	github.com/openconfig/ygot v0.22.1
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/profile v1.6.0
 	github.com/spf13/cobra v1.4.0
+	github.com/yndd/cache v0.0.5
+	github.com/yndd/grpchandlers v0.0.4
+	github.com/yndd/grpcserver v0.0.10
 	github.com/yndd/ndd-core v0.2.22
-	github.com/yndd/ndd-runtime v0.5.15
+	github.com/yndd/ndd-runtime v0.5.18
 	github.com/yndd/ndd-yang v0.2.8
 	github.com/yndd/nddo-runtime v0.0.76
-	github.com/yndd/nddp-system v0.2.4
-	github.com/yndd/reconciler-controller v0.0.13
-	github.com/yndd/registrator v0.0.19
-	github.com/yndd/target v0.0.55
-	google.golang.org/grpc v1.46.0
-	k8s.io/api v0.24.1
+	github.com/yndd/nddp-system v0.2.5
+	github.com/yndd/reconciler-controller v0.0.20
+	github.com/yndd/registrator v0.0.20
+	github.com/yndd/target v0.0.81
+	github.com/yndd/ygotsrl v0.0.2
+	google.golang.org/grpc v1.47.0
 	k8s.io/apimachinery v0.24.1
 	k8s.io/client-go v0.24.0
-	sigs.k8s.io/controller-runtime v0.12.0
+	sigs.k8s.io/controller-runtime v0.12.1
 )
 
 require (
@@ -115,12 +117,12 @@ require (
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
-	github.com/miekg/dns v1.1.47 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
+	github.com/openconfig/goyang v1.0.0 // indirect
 	github.com/openconfig/grpctunnel v0.0.0-20220222153957-e35baf49072c // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pkg/sftp v1.13.4 // indirect
@@ -136,7 +138,6 @@ require (
 	github.com/stoewer/go-strcase v1.2.0 // indirect
 	github.com/ugorji/go/codec v1.2.6 // indirect
 	github.com/xanzy/ssh-agent v0.3.1 // indirect
-	github.com/yndd/ndd-target-runtime v0.0.46 // indirect
 	github.com/zealic/xignore v0.3.3 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.opencensus.io v0.23.0 // indirect
@@ -154,7 +155,6 @@ require (
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
-	golang.org/x/tools v0.1.10 // indirect
 	golang.org/x/xerrors v0.0.0-20220411194840-2f41105eb62f // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/api v0.75.0 // indirect
@@ -167,6 +167,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20220512140231-539c8e751b99 // indirect
 	inet.af/netaddr v0.0.0-20210903134321-85fa6c94624e // indirect
+	k8s.io/api v0.24.1 // indirect
 	k8s.io/apiextensions-apiserver v0.24.0 // indirect
 	k8s.io/component-base v0.24.0 // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect

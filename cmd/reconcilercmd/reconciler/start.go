@@ -130,6 +130,7 @@ var startCmd = &cobra.Command{
 			Logger:    logging.NewLogrLogger(zlog.WithName("srl")),
 			Poll:      pollInterval,
 			Namespace: namespace,
+			Registrator: reg,
 			Copts: controller.Options{
 				MaxConcurrentReconciles: concurrency,
 				RateLimiter:             ratelimiter.NewDefaultProviderRateLimiter(ratelimiter.DefaultProviderRPS),

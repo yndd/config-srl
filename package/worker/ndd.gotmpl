@@ -1,0 +1,37 @@
+apiVersion: meta.pkg.ndd.yndd.io/v1
+kind: Provider
+metadata:
+  name: config-srl-worker
+  namespace: ndd-system
+spec:
+  pod:
+    name: config-srl-worker
+    type: statefulset
+    permissionRequests:
+    - apiGroups: [target.yndd.io]
+      resources: [targets, targets/status]
+      verbs: [get, list, watch, update, patch, create, delete]
+    - apiGroups: ["*"]
+      resources: [secrets]
+      verbs: [get, list, watch]
+    containers:
+    - container:
+        name: kube-rbac-proxy
+        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
+        args:
+        - --secure-listen-address=0.0.0.0:8443
+        - --upstream=http://127.0.0.1:8080/
+        - --logtostderr=true
+        - --v=10
+        ports:
+        - containerPort: 8443
+          name: https
+    - container:
+        name: worker
+        image: {{ include "repo" | default "yndd" }}/config-srl-worker-controller:latest
+        imagePullPolicy: Always
+      extras:
+        - {name: grpc, service: true, certificate: true, port: 9999, target-port: 9999}
+        - {name: metrics, service: true,  port: 8443, target-port: 443}
+        - {name: profiler, volume: true}
+        - {name: headless-grpc, service: true, port: 9999, targetPort: 9999}

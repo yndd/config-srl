@@ -20,8 +20,8 @@ import (
 	"reflect"
 
 	"github.com/openconfig/gnmi/proto/gnmi"
-	"github.com/yndd/config-srl/pkg/ygotsrl"
-	"github.com/yndd/ndd-runtime/pkg/model"
+	"github.com/yndd/cache/pkg/model"
+	"github.com/yndd/ygotsrl"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -34,11 +34,11 @@ import (
 // log is for logging in this package.
 var srlconfiglog = logf.Log.WithName("srlconfig-resource-webhook")
 var m = &model.Model{
-	ModelData:       make([]*gnmi.ModelData, 0),
-	StructRootType:  reflect.TypeOf((*ygotsrl.Device)(nil)),
-	SchemaTreeRoot:  ygotsrl.SchemaTree["Device"],
-	JsonUnmarshaler: ygotsrl.Unmarshal,
-	EnumData:        ygotsrl.ΛEnum,
+	ModelData:      make([]*gnmi.ModelData, 0),
+	StructRootType: reflect.TypeOf((*ygotsrl.Device)(nil)),
+	SchemaTreeRoot: ygotsrl.SchemaTree["Device"],
+	//JsonUnmarshaler: ygotsrl.Unmarshal,
+	EnumData: ygotsrl.ΛEnum,
 }
 
 func (r *SrlConfig) SetupWebhookWithManager(mgr ctrl.Manager) error {

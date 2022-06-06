@@ -16,7 +16,7 @@ import (
 
 // getGvkUpate returns an update to the system cache using the k8s api naming convetion and the nddp system
 // gvk -> group, version, kind, namespace, name
-func (e *externalDevice) getGvkUpate(mg resource.Managed, obs managed.ExternalObservation, action ygotnddp.E_NddpSystem_ResourceAction) ([]*gnmi.Update, error) {
+func (e *externalDevice) getGvkUpate(mg resource.Managed, obs managed.ExternalObservation, action ygotnddp.E_YnddSystem_ResourceAction) ([]*gnmi.Update, error) {
 	e.log.Debug("getGvkUpate")
 
 	// get gvk Name
@@ -28,7 +28,7 @@ func (e *externalDevice) getGvkUpate(mg resource.Managed, obs managed.ExternalOb
 		return nil, err
 	}
 
-	updates := map[string]*ygotnddp.NddpSystem_Gvk_Update{}
+	updates := map[string]*ygotnddp.YnddSystem_Gvk_Update{}
 	if obs.Updates != nil {
 		if updates, err = getUpdates(obs.Updates); err != nil {
 			return nil, err
@@ -41,11 +41,11 @@ func (e *externalDevice) getGvkUpate(mg resource.Managed, obs managed.ExternalOb
 	}
 
 	// get nddpData from gvkname, action, paths and spec
-	gvkData := &ygotnddp.NddpSystem_Gvk{
+	gvkData := &ygotnddp.YnddSystem_Gvk{
 		Name:    ygot.String(gvkName),
 		Action:  action,
 		Path:    mg.GetRootPaths(),
-		Status:  ygotnddp.NddpSystem_ResourceStatus_PENDING,
+		Status:  ygotnddp.YnddSystem_ResourceStatus_PENDING,
 		Reason:  ygot.String(""),
 		Spec:    spec,
 		Delete:  deletes,
@@ -96,8 +96,8 @@ func getPaths(gnmiPaths []*gnmi.Path) []string {
 }
 
 // getPaths returns a map of updates with the rootPath as key
-func getUpdates(gnmiUpdates []*gnmi.Update) (map[string]*ygotnddp.NddpSystem_Gvk_Update, error) {
-	updates := map[string]*ygotnddp.NddpSystem_Gvk_Update{}
+func getUpdates(gnmiUpdates []*gnmi.Update) (map[string]*ygotnddp.YnddSystem_Gvk_Update, error) {
+	updates := map[string]*ygotnddp.YnddSystem_Gvk_Update{}
 	for _, u := range gnmiUpdates {
 		xpath := yparser.GnmiPath2XPath(u.GetPath(), true)
 		v, err := yparser.GetValue(u.GetVal())
@@ -108,9 +108,9 @@ func getUpdates(gnmiUpdates []*gnmi.Update) (map[string]*ygotnddp.NddpSystem_Gvk
 		if err != nil {
 			return nil, err
 		}
-		updates[xpath] = &ygotnddp.NddpSystem_Gvk_Update{
-			Path: ygot.String(xpath),
-			Val:  ygot.String(string(val)),
+		updates[xpath] = &ygotnddp.YnddSystem_Gvk_Update{
+			Path:  ygot.String(xpath),
+			Value: ygot.String(string(val)),
 		}
 	}
 	return updates, nil
