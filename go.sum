@@ -2060,8 +2060,8 @@ github.com/yndd/reconciler-controller v0.0.20/go.mod h1:GO582ZIjVORELBVDXjpPJC6g
 github.com/yndd/registrator v0.0.19/go.mod h1:6y85l1HVkcwJNSknGFyx8jBmw4VDgRUaF0Spku6sHiw=
 github.com/yndd/registrator v0.0.20 h1:m4VjzEtDqISyCaMTckL67hGwjkA5fqUd0NTr/yranyY=
 github.com/yndd/registrator v0.0.20/go.mod h1:6y85l1HVkcwJNSknGFyx8jBmw4VDgRUaF0Spku6sHiw=
-github.com/yndd/target v0.0.99 h1:sKxn5sOyXkjCOeX8rYxe/AD5qQxMCJ6fDHg+ncMPbbg=
-github.com/yndd/target v0.0.99/go.mod h1:EN0PXozTG9I1d4EOX41D6rRR0aSqrCuj4njMzCWFT/E=
+github.com/yndd/target v0.0.100 h1:9Zbw8zP0z/XZ5/8lZbe2rDj37hXFeedEmIPpGSowkCI=
+github.com/yndd/target v0.0.100/go.mod h1:EN0PXozTG9I1d4EOX41D6rRR0aSqrCuj4njMzCWFT/E=
 github.com/yndd/ygotsrl v0.0.2 h1:OlQUDiNO1ugoPxdw6iO5YqpAuN7dMWOviKZTJwUmbeY=
 github.com/yndd/ygotsrl v0.0.2/go.mod h1:nk7Gk6N/+Q5DZXh+926wqdCB0TdCkc6FAOfZGZwXvvQ=
 github.com/yudai/gojsondiff v1.0.0/go.mod h1:AY32+k2cwILAkW1fbgxQ5mUmMiZFgLIV+FBNExI05xg=
