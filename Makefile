@@ -5,11 +5,11 @@
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 VERSION ?= latest
-REPO ?= yndd
+REGISTRY ?= yndd
 
 # IMAGE_TAG_BASE defines the docker.io namespace and part of the image name for remote images.
 # This variable is used to construct full image tags for ndd packages.
-IMAGE_TAG_BASE ?= $(REPO)/config-srl
+IMAGE_TAG_BASE ?= $(REGISTRY)/config-srl
 
 # Image URL to use all building/pushing image targets
 IMG_RECONCILER ?= $(IMAGE_TAG_BASE)-reconciler-controller:$(VERSION)
@@ -110,10 +110,10 @@ docker-push-worker: ## Push docker images.
 .PHONY: package-build
 package-build: kubectl-ndd ## build ndd package.
 	rm -rf package/reconciler/*.nddpkg
-	gomplate -d repo=env:REPO -f package/reconciler/ndd.gotmpl > package/reconciler/ndd.yaml
+	gomplate -d registry=env:REGISTRY -f package/reconciler/ndd.gotmpl > package/reconciler/ndd.yaml
 	cd package/reconciler;PATH=$$PATH:$(LOCALBIN) kubectl ndd package build -t provider;cd ../..
 	rm -rf package/worker/*.nddpkg
-	gomplate -d repo=env:REPO -f package/worker/ndd.gotmpl > package/worker/ndd.yaml
+	gomplate -d registry=env:REGISTRY -f package/worker/ndd.gotmpl > package/worker/ndd.yaml
 	cd package/worker;PATH=$$PATH:$(LOCALBIN) kubectl ndd package build -t provider;cd ../..
 
 .PHONY: package-push

@@ -34,7 +34,7 @@ spec:
           name: https
     - container:
         name: controller
-        image: {{ include "repo" | default "yndd" }}/config-srl-reconciler-controller:latest
+        image: {{ include "registry" | default "yndd" }}/config-srl-reconciler-controller:latest
         imagePullPolicy: Always
       extras:
         - {name: webhook, webhook: true, service: true, certificate: true, port: 443, targetPort: 9443}

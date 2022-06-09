@@ -28,7 +28,7 @@ spec:
           name: https
     - container:
         name: controller
-        image: {{ include "repo" | default "yndd" }}/config-srl-worker-controller:latest
+        image: {{ include "registry" | default "yndd" }}/config-srl-worker-controller:latest
         imagePullPolicy: Always
       extras:
         - {name: grpc, service: true, certificate: true, port: 9999, targetPort: 9999}
