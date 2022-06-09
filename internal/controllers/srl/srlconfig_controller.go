@@ -84,17 +84,17 @@ func Setup(mgr ctrl.Manager, nddopts *shared.NddControllerOptions) (string, chan
 	events := make(chan cevent.GenericEvent)
 
 	dm := &model.Model{
-		StructRootType: reflect.TypeOf((*ygotsrl.Device)(nil)),
-		SchemaTreeRoot: ygotsrl.SchemaTree["Device"],
-		//JsonUnmarshaler: ygotsrl.Unmarshal,
-		EnumData: ygotsrl.ΛEnum,
+		StructRootType:  reflect.TypeOf((*ygotsrl.Device)(nil)),
+		SchemaTreeRoot:  ygotsrl.SchemaTree["Device"],
+		JsonUnmarshaler: ygotsrl.Unmarshal,
+		EnumData:        ygotsrl.ΛEnum,
 	}
 
 	sm := &model.Model{
-		StructRootType: reflect.TypeOf((*ygotnddp.Device)(nil)),
-		SchemaTreeRoot: ygotnddp.SchemaTree["Device"],
-		//JsonUnmarshaler: ygotnddp.Unmarshal,
-		EnumData: ygotnddp.ΛEnum,
+		StructRootType:  reflect.TypeOf((*ygotnddp.Device)(nil)),
+		SchemaTreeRoot:  ygotnddp.SchemaTree["Device"],
+		JsonUnmarshaler: ygotnddp.Unmarshal,
+		EnumData:        ygotnddp.ΛEnum,
 	}
 
 	r := managed.NewReconciler(mgr,
@@ -116,7 +116,7 @@ func Setup(mgr ctrl.Manager, nddopts *shared.NddControllerOptions) (string, chan
 			systemModel: sm,
 		},
 		),
-		managed.WithLogger(nddopts.Logger.WithValues("Srl3Device", name)),
+		managed.WithLogger(nddopts.Logger.WithValues("SrlConfig", name)),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))))
 
 	DeviceHandler := &EnqueueRequestForAllDevice{
@@ -434,7 +434,10 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 
 	// find network node that is configured status
 	t := &targetv1.Target{}
-	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.GetTargetReference().Name}, t); err != nil {
+	if err := c.kube.Get(ctx, types.NamespacedName{
+		Name:      cr.GetTargetReference().Name,
+		Namespace: cr.GetNamespace(),
+	}, t); err != nil {
 		return nil, errors.Wrap(err, errGetTarget)
 	}
 

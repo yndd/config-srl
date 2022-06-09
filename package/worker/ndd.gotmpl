@@ -27,11 +27,11 @@ spec:
         - containerPort: 8443
           name: https
     - container:
-        name: worker
+        name: controller
         image: {{ include "repo" | default "yndd" }}/config-srl-worker-controller:latest
         imagePullPolicy: Always
       extras:
-        - {name: grpc, service: true, certificate: true, port: 9999, target-port: 9999}
-        - {name: metrics, service: true,  port: 8443, target-port: 443}
+        - {name: grpc, service: true, certificate: true, port: 9999, targetPort: 9999}
+        - {name: metrics, service: true,  port: 8443, targetPort: 443}
         - {name: profiler, volume: true}
         - {name: headless-grpc, service: true, port: 9999, targetPort: 9999}

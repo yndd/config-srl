@@ -1,0 +1,1 @@
+gnmic -a localhost:9999 -u admin -p admin --skip-verify --target ndd-system/leaf1.sim.1a-b0-02-ff-00-00 get --prefix system:/ --path /

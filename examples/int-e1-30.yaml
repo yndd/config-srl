@@ -1,0 +1,17 @@
+apiVersion: config.yndd.io/v1alpha1
+kind: SrlConfig
+metadata:
+  name: int-e1-30
+  namespace: ndd-system
+spec:
+  lifecycle:
+    deploymentPolicy: active
+    deletionPolicy: delete
+  targetRef:
+    name: leaf1.sim.1a-b0-02-ff-00-00
+  properties:
+    interface:
+    - name: "ethernet-1/30"
+      admin-state: "enable"
+      description: "ndd-ethernet-1/30"
+      vlan-tagging: true

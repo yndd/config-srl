@@ -4,7 +4,7 @@ metadata:
   name: config-srl
   namespace: ndd-system
 spec:
-  vendorType: nokia-srl
+  vendorType: nokiaSRL
   packages:
   - name: reconciler
     kind: reconciler

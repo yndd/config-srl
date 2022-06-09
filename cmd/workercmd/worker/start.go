@@ -131,10 +131,10 @@ var startCmd = &cobra.Command{
 			VendorType:     targetv1.VendorTypeNokiaSRL,
 			Cache:          c,
 			TargetModel: &model.Model{
-				StructRootType: reflect.TypeOf((*ygotsrl.Device)(nil)),
-				SchemaTreeRoot: ygotsrl.SchemaTree["Device"],
-				//JsonUnmarshaler: ygotsrl.Unmarshal,
-				EnumData: ygotsrl.ΛEnum,
+				StructRootType:  reflect.TypeOf((*ygotsrl.Device)(nil)),
+				SchemaTreeRoot:  ygotsrl.SchemaTree["Device"],
+				JsonUnmarshaler: ygotsrl.Unmarshal,
+				EnumData:        ygotsrl.ΛEnum,
 			},
 		})
 

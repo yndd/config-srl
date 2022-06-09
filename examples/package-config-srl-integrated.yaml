@@ -1,8 +1,0 @@
-apiVersion: pkg.ndd.yndd.io/v1
-kind: Provider
-metadata:
-  name: config-srl-integrated
-  namespace: ndd-system
-spec:
-  package: yndd/config-srl-integrated:latest
-  packagePullPolicy: Always

@@ -16,7 +16,7 @@ limitations under the License.
 
 // Package v1alpha1 contains API Schema definitions for the srl3 v1 API group
 //+kubebuilder:object:generate=true
-//+groupName=srl.config.ndd.yndd.io
+//+groupName=config.yndd.io
 package v1alpha1
 
 import (
@@ -26,14 +26,14 @@ import (
 
 const (
 	// Group in the kubernetes api
-	Group = "srl.config.ndd.yndd.io"
+	Group = "config.yndd.io"
 	// Version in the kubernetes api
 	Version = "v1alpha1"
 )
 
 var (
 	// GroupVersion is group version used to register these objects
-	GroupVersion = schema.GroupVersion{Group: "srl.config.ndd.yndd.io", Version: "v1alpha1"}
+	GroupVersion = schema.GroupVersion{Group: Group, Version: Version}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}

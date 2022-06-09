@@ -34,11 +34,11 @@ import (
 // log is for logging in this package.
 var srlconfiglog = logf.Log.WithName("srlconfig-resource-webhook")
 var m = &model.Model{
-	ModelData:      make([]*gnmi.ModelData, 0),
-	StructRootType: reflect.TypeOf((*ygotsrl.Device)(nil)),
-	SchemaTreeRoot: ygotsrl.SchemaTree["Device"],
-	//JsonUnmarshaler: ygotsrl.Unmarshal,
-	EnumData: ygotsrl.ΛEnum,
+	ModelData:       make([]*gnmi.ModelData, 0),
+	StructRootType:  reflect.TypeOf((*ygotsrl.Device)(nil)),
+	SchemaTreeRoot:  ygotsrl.SchemaTree["Device"],
+	JsonUnmarshaler: ygotsrl.Unmarshal,
+	EnumData:        ygotsrl.ΛEnum,
 }
 
 func (r *SrlConfig) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -47,7 +47,7 @@ func (r *SrlConfig) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-//+kubebuilder:webhook:path=/mutate-srl-config-ndd-yndd-io-v1alpha1-srlconfig,mutating=true,failurePolicy=fail,sideEffects=None,groups=srl.config.ndd.yndd.io,resources="*",verbs=create;update,versions=v1alpha1,name=mutate.srl.config.ndd.yndd.io,admissionReviewVersions=v1
+//+kubebuilder:webhook:path=/mutate-config-ndd-yndd-io-v1alpha1-srlconfig,mutating=true,failurePolicy=fail,sideEffects=None,groups=config.ndd.yndd.io,resources="*",verbs=create;update,versions=v1alpha1,name=mutate.config.ndd.yndd.io,admissionReviewVersions=v1
 var _ webhook.Defaulter = &SrlConfig{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
@@ -83,7 +83,7 @@ func (r *SrlConfig) Default() {
 
 }
 
-//+kubebuilder:webhook:path=/validate-srl-config-ndd-yndd-io-v1alpha1-srlconfig,mutating=false,failurePolicy=fail,sideEffects=None,groups=srl.config.ndd.yndd.io,resources="*",verbs=create;update,versions=v1alpha1,name=validate.srl.config.ndd.yndd.io,admissionReviewVersions=v1
+//+kubebuilder:webhook:path=/validate-config-ndd-yndd-io-v1alpha1-srlconfig,mutating=false,failurePolicy=fail,sideEffects=None,groups=srl.config.ndd.yndd.io,resources="*",verbs=create;update,versions=v1alpha1,name=validate.config.ndd.yndd.io,admissionReviewVersions=v1
 
 var _ webhook.Validator = &SrlConfig{}
 

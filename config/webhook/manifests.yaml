@@ -11,9 +11,9 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
-      path: /validate-srl-config-ndd-yndd-io-v1alpha1-srlconfig
+      path: /validate-config-ndd-yndd-io-v1alpha1-srlconfig
   failurePolicy: Fail
-  name: validate.srl.config.ndd.yndd.io
+  name: validate.config.ndd.yndd.io
   rules:
   - apiGroups:
     - srl.config.ndd.yndd.io

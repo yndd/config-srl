@@ -8,6 +8,18 @@ spec:
     name: config-srl-reconciler
     type: statefulset
     permissionRequests:
+    - apiGroups: ["*"]
+      resources: [secrets]
+      verbs: [get, list, watch]
+    - apiGroups: ["*"]
+      resources: [events]
+      verbs: [get, list, watch, update, patch, create, delete]
+    - apiGroups: [target.yndd.io]
+      resources: [targets, targets/status]
+      verbs: [get, list, watch]
+    - apiGroups: [target.yndd.io]
+      resources: [targetusages]
+      verbs: [get, list, watch, update, patch, create, delete]
     containers:
     - container:
         name: kube-rbac-proxy
@@ -21,10 +33,11 @@ spec:
         - containerPort: 8443
           name: https
     - container:
-        name: reconciler
+        name: controller
         image: yndd/config-srl-reconciler-controller:latest
+        imagePullPolicy: Always
       extras:
-        - {name: webhook, webhook: true, service: true, certificate: true, port: 443, target-port: 9443}
-        - {name: grpc, service: true, certificate: true, port: 9999, target-port: 9999}
-        - {name: metrics, service: true, port: 8443, target-port: 443}
+        - {name: webhook, webhook: true, service: true, certificate: true, port: 443, targetPort: 9443}
+        - {name: grpc, service: true, certificate: true, port: 9999, targetPort: 9999}
+        - {name: metrics, service: true, port: 8443, targetPort: 443}
         - {name: profiler, volume: true}
