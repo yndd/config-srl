@@ -5,11 +5,11 @@
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
 VERSION ?= latest
-REGISTRY ?= yndd
+REPO ?= yndd
 
 # IMAGE_TAG_BASE defines the docker.io namespace and part of the image name for remote images.
 # This variable is used to construct full image tags for ndd packages.
-IMAGE_TAG_BASE ?= $(REGISTRY)/config-srl
+IMAGE_TAG_BASE ?= $(REPO)/config-srl
 
 # Image URL to use all building/pushing image targets
 IMG_RECONCILER ?= $(IMAGE_TAG_BASE)-reconciler-controller:$(VERSION)
