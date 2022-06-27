@@ -69,10 +69,10 @@ func init() {
 	SchemeBuilder.Register(&SrlConfig{}, &SrlConfigList{})
 }
 
-// Device type metadata.
+// SrlConfig type metadata.
 var (
-	DeviceKind             = reflect.TypeOf(SrlConfig{}).Name()
-	DeviceGroupKind        = schema.GroupKind{Group: Group, Kind: DeviceKind}.String()
-	DeviceKindAPIVersion   = DeviceKind + "." + GroupVersion.String()
-	DeviceGroupVersionKind = GroupVersion.WithKind(DeviceKind)
+	SrlConfigKind             = reflect.TypeOf(SrlConfig{}).Name()
+	SrlConfigGroupKind        = schema.GroupKind{Group: Group, Kind: SrlConfigKind}.String()
+	SrlConfigKindAPIVersion   = SrlConfigKind + "." + GroupVersion.String()
+	SrlConfigGroupVersionKind = GroupVersion.WithKind(SrlConfigKind)
 )
