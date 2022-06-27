@@ -79,7 +79,7 @@ const (
 func Setup(mgr ctrl.Manager, nddopts *shared.NddControllerOptions) (string, chan cevent.GenericEvent, error) {
 	//func SetupDevice(mgr ctrl.Manager, o controller.Options, nddcopts *shared.NddControllerOptions) error {
 
-	name := managed.ControllerName(srlv1alpha1.DeviceGroupKind)
+	name := managed.ControllerName(srlv1alpha1.SrlConfigGroupKind)
 
 	events := make(chan cevent.GenericEvent)
 
@@ -98,7 +98,7 @@ func Setup(mgr ctrl.Manager, nddopts *shared.NddControllerOptions) (string, chan
 	}
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(srlv1alpha1.DeviceGroupVersionKind),
+		resource.ManagedKind(srlv1alpha1.SrlConfigGroupVersionKind),
 		managed.WithPollInterval(nddopts.Poll),
 		managed.WithExternalConnecter(&connector{
 			log:         nddopts.Logger,
@@ -126,7 +126,7 @@ func Setup(mgr ctrl.Manager, nddopts *shared.NddControllerOptions) (string, chan
 	}
 
 	//return ctrl.NewControllerManagedBy(mgr).
-	return srlv1alpha1.DeviceGroupKind, events, ctrl.NewControllerManagedBy(mgr).
+	return srlv1alpha1.SrlConfigGroupKind, events, ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(nddopts.Copts).
 		For(&srlv1alpha1.SrlConfig{}).
